@@ -1,0 +1,62 @@
+<html>
+<head>
+  <script src='interface.js'></script>
+</head>
+<body>
+  <script>
+    // NOTE: The Interface.js server outputs all OSC messages to port 8082. See the README for more information
+    
+    var container = $("<div>").css({
+      width:'50%',
+      height:'50%',
+      position:'absolute',
+      top:0, left:0,
+      display:'block',
+      backgroundColor:'#333',
+      margin:0, border:0, padding:0
+    })
+    $("body").append(container);
+    
+    var p = $("<p>").css({
+      width:'50%',
+      height:'50%',
+      position:'absolute',
+      top:0, right:0,
+      display:'block',
+      backgroundColor:'#333',
+      margin:0, padding:0, border:0,
+      color:"#fff",
+    })
+    $("body").append(p);
+    
+    panel = new Interface.Panel({ 'container':container, useRelativeSizesAndPositions: true });
+    
+    // send a message to the address '/button'
+    a = new Interface.Button({
+      bounds:[0,.5,1,.5],
+      mode:'contact',
+      label:'send chat',
+      target: null,
+      onvaluechange : function() {
+        Interface.OSC.send('/clients/*/chat', 's', [b.value]);
+      }
+    })
+    
+    // send a message to the address '/slider'
+    b = new Interface.TextField({
+      bounds:[0,0,1,.5],
+      target:null,
+      fill:"#fff",
+      stroke:"#fff",
+      isVertical:false,
+    })
+    panel.add( a, b );
+    
+    Interface.OSC.receive = function(address, typetags, parameters) {
+      console.log(parameters);
+      $(p).html( $(p).html() + parameters[0] + "<br>" );
+    }
+    
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "Interface.js server",
+  "main": "index.html",
+  "window": {
+    "show":false,
+    "toolbar":false
+  }
+}

@@ -1,0 +1,40 @@
+<html>
+<head>
+  <!-- This file is the boilerplate needed to create an interface using interface.js -->
+  <script src="zepto.js"></script>
+  <script src="interface.js"></script>
+</head>
+<body>
+  <script>
+    panel = new Interface.Panel();
+Slider_0 = new Interface.Slider({
+  "x":0,
+  "y":0,
+  "width":.5,
+  "height":1,
+  "value":0,
+  "name":"Slider_0",
+  "type":"Slider",
+  "target":"OSC",
+  "key":"/Slider_0",
+  "isVertical":true
+});
+panel.add( Slider_0 );
+
+Slider_1 = new Interface.Slider({
+  "x":.5,
+  "y":0,
+  "width":.5,
+  "height":1,
+  "value":0,
+  "name":"Slider_1",
+  "type":"Slider",
+  "target":"OSC",
+  "key":"/Slider_1",
+  "isVertical":true
+});
+panel.add( Slider_1 );
+
+  </script>
+</body>
+</html>

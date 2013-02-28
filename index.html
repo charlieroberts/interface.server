@@ -1,0 +1,226 @@
+<html>
+<head>
+  
+<script src="./jquery-ui-1.10.1.custom/js/jquery-1.9.1.js"></script>
+<script src="jquery-ui-1.10.1.custom/js/jquery-ui-1.10.1.custom.js" type="text/javascript" charset="utf-8"></script>
+
+<script src="mousetrap.js" type="text/javascript" charset="utf-8"></script>
+
+<link rel="stylesheet" href="jquery-ui-1.10.1.custom/css/base/jquery.ui.theme.css" type="text/css" media="screen" title="no title" charset="utf-8">
+<link rel="stylesheet" href="jquery-ui-1.10.1.custom/css/base/jquery.ui.button.css" type="text/css" media="screen" title="no title" charset="utf-8">
+<link rel="stylesheet" href="jquery-ui-1.10.1.custom/css/base/jquery.ui.resizable.css" type="text/css" media="screen" title="no title" charset="utf-8">
+<link rel="stylesheet" href="jquery-ui-1.10.1.custom/css/base/jquery.ui.accordion.css" type="text/css" media="screen" title="no title" charset="utf-8">
+
+<title>Interface.js Server</title>
+
+<style>
+.highlightedRow { background-color: #dedede; }
+body { font-family:Helvetica, sans-serif; background-color:#ededed; }
+ul { list-style:none; margin:0; padding:0;}
+h3 { font-size:1em; display:inline; color:#333; margin-right:3em; margin-left:1em;}
+
+h1 { font-size:1.2em;}
+td { font-size:.6em; }
+
+table { border-collapse:collapse; width: 100%; table-layout:fixed; }
+table, th { border: 1px solid #666;}
+
+table thead th { font-size:.8em; }
+th { margin: 0; padding: 5px; font-weight:normal; font-size: .8em; background:#999; color:#fff;}
+.ui-widget{font-size:.7em;}
+thead tr { width: 100%; }
+tbody tr { height: 2em;}
+tbody tr td { text-align: center; border-right:1px solid #666; border-top:1px solid #666; font-size:.9em; overflow:hidden; }
+
+#monitorTable, #serverTable, #clientsTable { border:1px solid #666; margin-bottom:1.5em; }
+#clientsTable tbody, #serverTable tbody { font-size:.85em; }
+#monitorTable tbody { font-size:.75em;}
+
+input[type="text"] { width: 90%; }
+
+.interfaceHeader { line-height:1.75em !important;}
+</style>
+</head>
+<body>
+  <div id='servers'>
+    <div class="ui-widget-header ui-corner-all interfaceHeader">
+      <h3>Servers</h3> 
+      <button id="newButton">New Server</button>
+      <button id="deleteButton">Remove Selected Server</button>          
+    </div>
+    <table id='serverTable'>
+      <thead>
+        <tr>
+        <th width='10%'>name</th><th width='30%'>directory</th><th width='10%'>web server port</th><th width='10%'>socket port</th><th width='10%'>osc output port</th><th width='10%'>osc input port</th><th width='5%'>send id</th><th width='5%'>monitor</th><th width='5%'>enabled</th>
+        </tr>
+      </thead>
+      <tbody id="serverTableBody">
+      </tbody>
+    </table>
+  </div>
+  
+  <div id='clients'>
+    <div class="ui-widget-header ui-corner-all interfaceHeader">
+      <h3>Clients</h3>
+    </div>
+    <table id='clientsTable'>
+      <thead>
+        <tr>
+        <th>id #</th><th>ip address</th><th>connected to</th><th>interface</th><th>monitor</th>
+        </tr>
+      </thead>
+      <tbody id="clientsTableBody">
+      </tbody>
+    </table>
+  </div>
+  
+  <div id='monitor'>
+    <div class="ui-widget-header ui-corner-all interfaceHeader">
+      <h3>Monitor</h3>
+      <button id="clearMonitorButton">Clear</button>
+    </div>
+    <table id='monitorTable'>
+      <thead>
+        <tr>
+        <th width='10%'>server</th><th width='10%'>client id</th><th width='10%'>msg address</th><th width='10%'>typetags</th><th width='60%'>message values</th>
+        </tr>
+      </thead>
+      <tbody id="monitorTableBody">
+      </tbody>
+    </table>
+  </div>
+  <input type="file" nwfile style='display:none' id='fileButton'/>
+  <input type="file" nwsaveas style='display:none' id='saveFileButton'/>
+<script>
+  var serverCount = 1,
+      _srv = null,
+      servers = {};
+  
+  if(typeof global.interface === 'undefined') {
+    var s = $('<script src="server.js" type="text/javascript" charset="utf-8">');
+    $('head').append(s);
+  }else{
+    // page reloaded, remove all servers
+    global.interface.removeAllServers();
+  }
+  
+  $( '#deleteButton' )
+    .button({ icons:{ primary:'ui-icon-close'} })
+    .click(function() {
+      if( global.interface.highlightServerRow !== null ) {
+        global.interface.removeServer( global.interface.highlightServerRow.server );
+        $( global.interface.highlightServerRow ).remove();
+        global.interface.highlightServerRow = null;
+      }
+    });
+  
+  $( "#clearMonitorButton" )
+    .button({icons:{ primary:'ui-icon-close' } })
+    .click( function() { 
+      $("#monitorTableBody").empty();
+      rowCount = 0;
+    });   
+
+  $("#newButton").button({icons:{ primary:'ui-icon-document' } })
+    .click(function() {
+      // server name | interface directory | interface port | osc in port | osc out port | monitor | 
+      var row = $("<tr>")
+        .append( $("<td>").append( $('<input type="text" value="Server' + serverCount++ + '"></input>') ) )
+        .append( $("<td>").append( $('<input type="file" nwdirectory />') ) )
+        .append( $("<td>").append( $('<input type="text" value="8080"></input>') ) )        
+        .append( $("<td>").append( $('<input type="text" value="8081"></input>') ) )
+        .append( $("<td>").append( $('<input type="text" value="8082"></input>') ) )
+        .append( $("<td>").append( $('<input type="text" value="8083"></input>') ) )
+        .append( $("<td>").append( $("<input type='checkbox'>") ) )
+        .append( $("<td>").append( $("<input type='checkbox'>") ) )
+        .append( $("<td>").append( $("<input type='checkbox'>").change( 
+          function() { 
+            var name = $(row.children()[0].children[0]).val(),
+                directory =     '/Users/charlie/Documents/code/interface_server/server/interfaces/', ///$(row.children()[1].children[0]).val(),
+                webServerPort = $(row.children()[2].children[0]).val(),
+                socketPort =    $(row.children()[3].children[0]).val(),
+                oscOutPort =    $(row.children()[4].children[0]).val(),
+                oscInPort =     $(row.children()[5].children[0]).val(),                
+                appendID =      $(row.children()[6].children[0]).is(':checked'),                
+                monitor =       $(row.children()[7].children[0]).is(':checked');
+
+            if(directory !== '' && typeof directory !== 'undefined') {
+              _srv = global.interface.makeServer(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, appendID, monitor);
+              _srv.row = row;
+              
+              if(_srv) {
+                $(row.children()[0].children[0]).change( function() { _srv.name           = $(this).val(); });
+                $(row.children()[1].children[0]).change( function() { _srv.directory      = $(this).val(); });
+                $(row.children()[2].children[0]).change( function() { _srv.webServerPort  = $(this).val(); });
+                $(row.children()[3].children[0]).change( function() { _srv.socketPort     = $(this).val(); });
+                $(row.children()[4].children[0]).change( function() { _srv.oscOutPort     = $(this).val(); });
+                $(row.children()[5].children[0]).change( function() { _srv.oscInPort      = $(this).val(); });
+                $(row.children()[6].children[0]).change( function() { _srv.shouldAppendID = $(this).is(':checked'); });
+                $(row.children()[7].children[0]).change( function() { _srv.shouldMonitor  = $(this).is(':checked'); });
+                row.server = _srv;
+              }else{
+                $(row.children()[8].children[0]).prop('checked', false);
+              }
+            }
+          }
+        ))
+        
+      )
+      .on('mousedown', function() {
+        if(global.interface.highlightServerRow !== null) {
+          $(global.interface.highlightServerRow).removeClass('highlightedRow');
+        }
+        $(this).addClass('highlightedRow');
+        global.interface.highlightServerRow = row;
+      });
+      
+      $("#serverTableBody").append(row);
+  });
+  
+  var rowCount = 0;
+  _monitor = {
+    postMessage: function(serverName, id, address, typetags, parameters ) {
+      var row = $("<tr>")
+        .append( $("<td>").text( serverName ) )
+        .append( $("<td>").text( id ) )
+        .append( $("<td>").text( address ) )
+        .append( $("<td>").text( typetags ) )
+        .append( $("<td>").text( parameters ) );
+        
+      $("#monitorTableBody").prepend( row );
+      if(rowCount++ > 20) $("#monitorTableBody tr").last().remove();        
+    },
+    
+    addClient : function(client, id, ip, serverName, interfaceName) {
+      var row = $("<tr>")
+        .append( $("<td>").text( id ) )
+        .append( $("<td>").text( ip ) )
+        .append( $("<td>").text( serverName ) )        
+        .append( $("<td>").text( interfaceName ) )
+        .append( $("<td>").append( $("<input type='checkbox'>").change(
+          function() {
+            if( $(this).is(':checked') ) {
+              client.shouldMonitor = true;
+            }else{
+              client.shouldMonitor = false;
+            }
+          }
+        )
+      ));
+      
+      Object.defineProperty(client, 'interfaceName', {
+        get : function() { return interfaceName; },
+        set : function(_v) { 
+          interfaceName = _v;
+          $( row ).children()[3].text( interfaceName );
+        }
+      })
+      $("#clientsTableBody").append( row );
+      
+      return row;
+    },
+  };
+    
+</script>
+</body>
+</html>
