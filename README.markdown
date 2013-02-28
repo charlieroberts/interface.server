@@ -28,7 +28,7 @@ Upon opening the server, hit the "New Server" button. Configure the server by se
 
 Now you can open up a mobile device and type the name of the computer that the server is running on and add a .local to the url to tell the browser the destination is on the local network. Finally, add the port that you configured the server to serve web pages on (default 8080). For example, if your computer's name is foo:
 
-```http://foo.local:8080```
+http://foo.local:8080
 
 You should then be presented with a list of interfaces to choose from. Selecting any file in your browser will run the interface and the Interface server will transmit any messages it receives into either OSC messages or MIDI messages that leave the virtual midi output named "Interface Out".
 
