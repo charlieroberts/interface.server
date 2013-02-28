@@ -2,6 +2,8 @@
 
 NOTE: YOU PROBABLY WANT TO WAIT UNTIL COMPILED BINARIES ARE DISTRIBUTED TO PLAY WITH THE SERVER.
 
+![Screenshot](https://raw.github.com/charlieroberts/interface.server/screenshots/server_screenshot.png) 
+
 This project is designed as a server for interfaces created with [Interface.js][interfacejs]. The Interface.js Server has a number of purposes
   1) it serves interfaces to any browsers on the local area network
   2) it translates network messages from your browser into OSC or MIDI messages.
