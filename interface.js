@@ -302,6 +302,14 @@ Interface.Panel = function() {
       }
     },
     
+    getWidgetWithName: function( name ) {
+      for(var i = 0; i < this.children.length; i++) {
+        if( this.children[i].name === name) {
+          return this.children[i];
+        }
+      }
+    },
+    
     redoBoundaries : function() {
       var offset = $(this.container).offset();
       this.width  = $(this.container).width();
@@ -351,8 +359,13 @@ Interface.Panel = function() {
       }
     },
     
+    clear : function() {
+      this.ctx.clearRect( 0,0,this.width,this.height );
+      this.children.length = 0;
+    },
     remove: function(widget) {
       this.ctx.clearRect( widget._x(), widget._y(), widget._width(), widget._height() );
+      
       if(typeof widget.children !== 'undefined' && widget.type !== "XY") {
         for(var i = 0; i < widget.children.length; i++) {
           this.children.splice( this.children.indexOf(widget.children[i]) );

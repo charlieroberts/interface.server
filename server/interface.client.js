@@ -25,9 +25,109 @@ Interface.OSC = {
   },
   _receive : function( data ) {
     var msg = JSON.parse( data );
-    this.receive( msg.address, msg.typetags, msg.parameters );
+    if( msg.address in this.callbacks ) {
+      this.callbacks[ msg.address ]( msg.parameters );
+    }else{
+      this.receive( msg.address, msg.typetags, msg.parameters );
+    }
   },
   receive : function(address, typetags, parameters) {},
+  
+  callbacks : {
+    "/interface/runScript": function(args) {
+      eval(args.parameters[0]);
+    },
+    "/interface/addWidget": function(args) {
+      var w = {};
+
+      var json2 = args[0].replace(/\'/gi, "\""); // replace any single quotes in json string
+      
+      try {
+        eval("w = " + json2);
+        // TODO: use JSON.parse? It's really annoying to format strings for JSON in Max/MSP...
+        //w  = JSON.parse( json2 ); // since this might be an 'important' string, don't fail on json parsing error
+      }catch (e) {
+        console.log("ERROR PARSING JSON");
+        return;
+      }
+            
+      var isImportant = false;
+    	var hasBounds = (typeof w.bounds !== "undefined") || (typeof w.x !== "undefined");
+            
+      var _w = new Interface[w.type](w);
+      
+      panel.add( _w );
+                    
+      if(!hasBounds) {
+        // TODO: IMPLEMENT
+        //if(!Interface.isWidgetSensor(w) ) {
+        Interface.autogui.placeWidget(_w, isImportant);
+        //}
+      }
+        
+      // var widgetPage = (typeof w.page !== "undefined") ? w.page : Interface.currentPage;
+      // Interface.addingPage = widgetPage;
+      // Interface.addWidget(window[w.name], Interface.addingPage);
+    },
+    "/interface/addWidgetKV" : function(args) {
+      var w = {};
+      for (var i = 2; i < args.length; i+=2) {
+        w[args[i]]=args[i+1];
+      }
+                                        
+      var isImportant = false;
+            
+      if(typeof w.page === "undefined") {
+        w.page = Interface.currentPage;
+      }
+            
+      var _w = Interface.makeWidget(w);
+      _w.page = w.page;
+            
+      if(typeof _w.bounds == "undefined") {
+        if(!Interface.isWidgetSensor(w) ) {
+          Interface.autogui.placeWidget(_w, isImportant);
+        }
+      }
+            
+      var widgetPage = (typeof w.page !== "undefined") ? w.page : Interface.currentPage;
+      Interface.addWidget(window[w.name], widgetPage);
+    },
+    "/interface/autogui/redoLayout" : function(args) {
+      Interface.autogui.redoLayout();
+    },
+    "/interface/removeWidget": function(args) {
+      var w = panel.getWidgetWithName( args[0] );
+      if(typeof Interface.autogui !== "undefined") {
+        Interface.autogui.removeWidget( w );
+      }
+      panel.remove( w );
+    },
+    "/interface/setBounds": function(args) {
+      var w = panel.getWidgetWithName( args[0] );
+      w.bounds = [ args[1], args[2], args[3], args[4] ];
+    },
+    "/interface/setColors": function(args) {
+      var w = panel.getWidgetWithName( args[0] );
+      w.background = args[1];
+      w.fill = args[2];
+      w.stroke = args[3];
+      w.refresh();
+    },
+    "/interface/setRange": function(args) {
+      var w = panel.getWidgetWithName( args[0] );
+      w.min = args[1];
+      w.max = args[2];
+    },
+    "/interface/setAddress": function(args) {
+      var w = panel.getWidgetWithName(args[0]);
+      w.key = args[1];
+    },
+    "/interface/clear" : function(args) {
+      Interface.autogui.reset();
+      panel.clear();
+    },
+  },
 };
 
 Interface.MIDI = {

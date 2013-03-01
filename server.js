@@ -10,11 +10,32 @@ if(typeof require !== 'undefined') {
 }
 
 if(typeof global.interface === 'undefined') { // only run if not reloading...  
+  var ADMIN_PORT = 10000;
+  
   global.interface = {
     count: 0,
     servers: [],
     portsInUse: [],
     highlightedServerRow : null,
+    adminIn : new omgosc.UdpReceiver( ADMIN_PORT ),
+    
+    serverRow : function(server) {
+      $("#newButton").trigger('click');
+          
+      var row = $( $("#serverTableBody tr").last() );
+
+      $( $( $(row.children()[0] ).find("input") )[0] ).val( server.name );
+          
+      $( $( $(row.children()[1] ).find("input") )[0] ).remove();
+      $(row.children()[1]).text( server.directory );
+
+      $( $( $(row.children()[2] ).find("input") )[0] ).val( server.ports.webServer);
+      $( $( $(row.children()[3] ).find("input") )[0] ).val( server.ports.webSocket);
+      $( $( $(row.children()[4] ).find("input") )[0] ).val( server.ports.oscOut);
+      $( $( $(row.children()[5] ).find("input") )[0] ).val( server.ports.oscIn);
+      $( $( $(row.children()[6] ).find("input") )[0] ).prop( 'checked', server.shouldAppendID );
+      $( $( $(row.children()[7] ).find("input") )[0] ).prop( 'checked', server.shouldMonitor );
+    },
     
     openFile : function() { 
       $("#fileButton").trigger('click');
@@ -106,6 +127,9 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
   global.interface.interfaceJS = fs.readFileSync( './zepto.js', ['utf-8'] );
   global.interface.interfaceJS += fs.readFileSync( './interface.js', ['utf-8'] );
   global.interface.interfaceJS += fs.readFileSync( './server/interface.client.js', ['utf-8'] );
+  global.interface.interfaceJS += fs.readFileSync( './server/autogui.js', ['utf-8'] );
+  
+  global.interface.livecodePage = fs.readFileSync( './server/interfaces/livecode.html', ['utf-8'] );
   
   var your_menu = new gui.Menu({ 
     type: 'menubar' 
@@ -128,8 +152,40 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
   gui.Window.get().menu = your_menu;
   your_menu.insert( file, 1 );
   
-}else{ 
+  var __admin = {
+    '/createServer' : function( parameters ) {
+      // name | dir | serverPort | socketPort | oscOut | oscIn | shouldAppend | shouldMonitor
+      global.interface.serverRow({
+        name: parameters[0] || 'livecode',
+        directory : parameters[1] || './interfaces',
+        ports : {
+          webServer : parameters[2] || 8080,
+          webSocket : parameters[3] || 8081,
+          oscOut    : parameters[4] || 8082,
+          oscIn     : parameters[5] || 8083,
+        },
+        shouldAppendID : false,
+        shouldMonitor :false
+      });
+      
+      global.interface.makeServer(
+        parameters[0] || 'livecode',
+        parameters[1] || './interfaces',
+        parameters[2] || 8080,
+        parameters[3] || 8081,
+        parameters[4] || 8083,
+        parameters[5] || 8082,
+        false,
+        false,
+        true
+      );
+    }
+  }
 
+  global.interface.adminIn.on('', function(args) {
+    if(args.path in __admin)
+      __admin[ args.path ]( args.params );
+  });
 }
 
 global.interface.count++;
@@ -149,7 +205,7 @@ $(window).on('load', function() {
   win.show();
 });
 
-global.interface.makeServer = function(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, shouldAppendID, shouldMonitor) {
+global.interface.makeServer = function(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, shouldAppendID, shouldMonitor, livecode) {
   var clients           = [],
       serverID          = global.interface.servers.length,
       root              = directory,
@@ -174,6 +230,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
         'oscIn'         : null,
         'webSocket'     : null,
         'webServer'     : null,
+        'livecode'      : livecode,
         ports : {
           'webServer' : webServerPort,
           'webSocket' : socketPort,
@@ -231,11 +288,18 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
   }
 
   if(global.interface.portsInUse.indexOf( webServerPort ) === -1) {
-    server.webServer = connect()
-      .use( connect.directory( directory, { hidden:true,icons:true } ) )
-      .use( server.serveInterfaceJS )
-      .use( connect.static( directory ) )
-      .listen( webServerPort );
+    if( server.livecode === true ) {
+      server.webServer = connect()
+        .use( server.serveInterfaceJS )
+        .use( function(req, res) { res.end( global.interface.livecodePage ) })
+       .listen( webServerPort );
+    }else{
+      server.webServer = connect()
+        .use( connect.directory( directory, { hidden:true,icons:true } ) )
+        .use( server.serveInterfaceJS )
+        .use( connect.static( directory ) )
+        .listen( webServerPort );
+    }
         
     global.interface.portsInUse.push( webServerPort );
   }else{
