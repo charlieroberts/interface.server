@@ -433,6 +433,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
   });
   
   server.oscIn.on('', function(args) {
+    console.log("OSC", args);
     var split = args.path.split("/");
     if(split[1] === 'clients') {
       var msg = {},
@@ -462,6 +463,8 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
   });
   
   global.interface.servers.push( server );
+  
+  server.oscOut.send( '/serverCreated', 's', [ server.name ] );
   
   return server;
 }

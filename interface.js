@@ -637,7 +637,7 @@ Interface.Widget = {
     this.added = false;
     Interface.extend( this, widgetDefaults);
     
-    this.name = this.type + "_" + __widgetCount++;
+    this.name = options.name || this.type + "_" + __widgetCount++;
     this.target = "OSC";
     this.key = "/" + this.name;   
     
@@ -661,7 +661,7 @@ Interface.Widget = {
     if(this.value) this.setValue(this.value, true);
     
     var bounds = this.bounds || [this.x, this.y, this.width, this.height],
-        x = this.x, y = this.y, width = this.width, height = this.height;
+        x = this.x, y = this.y, width = this.width, height = this.height, value = this.value;
     
     Object.defineProperties(this, {
       bounds : {
@@ -688,7 +688,12 @@ Interface.Widget = {
         configurable: true,        
         get : function() { return height; },
         set : function(val) { this.clear(); height = val; this.refresh(); },
-      },      
+      },
+      /*value : {
+        configurable: true,        
+        get : function() { return value; },
+        set : function(val) { if(value !== val) { value = val; this.refresh(); } },
+      },*/        
     });
   },
   
@@ -1851,7 +1856,8 @@ Interface.Menu = function() {
     fontSize:15,
     touchEvent: function(e) { // we have to simulate this since the actual event was cancelled to avoid scrolling behavior
       if(this.hitTest(e)) {
-        var evt = document.createEvent('TouchEvent');
+        e.stopPropagation();
+        /*var evt = document.createEvent('TouchEvent');
         evt.initUIEvent('touchstart', true, true);
         
         evt.view = window;
@@ -1866,7 +1872,7 @@ Interface.Menu = function() {
         evt.shiftKey = false;
         evt.metaKey = false;
 
-        this.element.dispatchEvent(evt);
+        this.element.dispatchEvent(evt);*/
       }
     },
     _init : function() {

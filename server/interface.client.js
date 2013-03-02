@@ -25,13 +25,24 @@ Interface.OSC = {
   },
   _receive : function( data ) {
     var msg = JSON.parse( data );
+
     if( msg.address in this.callbacks ) {
       this.callbacks[ msg.address ]( msg.parameters );
     }else{
+      for(var i = 0; i < Interface.panels.length; i++) {
+        for( var j = 0; j < Interface.panels[i].children.length; j++) {
+          var child = Interface.panels[i].children[j];
+          
+          if( child.key === msg.address ) {
+            child.setValue( msg.parameters[ 0 ] );
+            return;
+          }
+        }
+      }
       this.receive( msg.address, msg.typetags, msg.parameters );
     }
   },
-  receive : function(address, typetags, parameters) {},
+  receive : function(address, typetags, parameters) { },
   
   callbacks : {
     "/interface/runScript": function(args) {
