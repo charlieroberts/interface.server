@@ -205,6 +205,7 @@ $(window).on('load', function() {
   win.show();
 });
 
+var ids = [];
 global.interface.makeServer = function(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, shouldAppendID, shouldMonitor, livecode) {
   var clients           = [],
       serverID          = global.interface.servers.length,
@@ -239,7 +240,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
         },
         
         serveInterfaceJS : function(req, res, next){
-          var ip = req.connection.remoteAddress;
+          //var ip = req.connection.remoteAddress;
 
         	req.uri = url.parse( req.url );
     
@@ -348,22 +349,32 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
     socket.shouldMonitor = false;
     socket.ip = socket._socket.remoteAddress;
     socket.interfaceName = fetchingInterface;
-      
+
     for(var i = 0; i < server.clients.length; i++) {
-      if(server.clients[i].ip === socket.ip) {
-        found = true;
-        break;
+      if(typeof server.clients[i] !== 'undefined') {
+        if(server.clients[i].ip === socket.ip) {
+          found = true;
+          socket.id = server.clients[i].id;
+          break;
+        }
       }
     }
   
     if(!found) {
-      socket.id = clients.length;
-      server.clients.push( socket );
+      var id;
+      for(var i = 0; i <= clients.length; i++) {
+        if(typeof clients[i] === 'undefined') {
+          id = i;
+          break;
+        }
+      }
+      socket.id = id;
+      server.clients[ id ] = socket;
     }
     
     socket.on( 'message', function( obj ) {
       var args = JSON.parse( obj );
-      console.log(args);
+
       if(args.type === 'osc') {
         var split = args.address.split("/");
       
@@ -424,7 +435,9 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
   
     socket.on('close', function() { 
       server.oscOut.send( '/deviceDisconnected', 'i', [ socket.id ] );
+      //clients.splice(socket.id, 1);
       delete clients[ socket.id ];
+      $(socket.row).remove();
     });
   
     server.oscOut.send( '/deviceConnected', 'i', [ socket.id ] );
