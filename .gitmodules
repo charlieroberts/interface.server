@@ -1,0 +1,3 @@
+[submodule "interface.js"]
+	path = interface.js
+	url = git@github.com:charlieroberts/interface.js.git

@@ -125,7 +125,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
   };
   
   global.interface.interfaceJS = fs.readFileSync( './zepto.js', ['utf-8'] );
-  global.interface.interfaceJS += fs.readFileSync( './interface.js', ['utf-8'] );
+  global.interface.interfaceJS += fs.readFileSync( './interface.js/interface.js', ['utf-8'] );
   global.interface.interfaceJS += fs.readFileSync( './server/interface.client.js', ['utf-8'] );
   global.interface.interfaceJS += fs.readFileSync( './server/autogui.js', ['utf-8'] );
   
