@@ -76,9 +76,10 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         for(var i = 0; i < serverRows.length; i++) {
           var row = $(serverRows[i]);
           // var server = global.interface.servers[i];
+          var dir = 
           var _server = {
             'name'          : $(row.children()[0].children[0]).val(),
-            'directory'     : '/Users/charlie/Documents/code/interface_server/server/interfaces/', ///$(row.children()[1].children[0]).val(),
+            'directory'     : $(row.children()[1].children[0]).val(),
             'ports' : {
               'webServer'   : $(row.children()[2].children[0]).val(),
               'webSocket'   : $(row.children()[3].children[0]).val(),                
