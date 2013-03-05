@@ -136,7 +136,7 @@ input[type="text"] { width: 90%; }
         .append( $("<td>").append( $("<input type='checkbox'>").change( 
           function() { 
             var name = $(row.children()[0].children[0]).val(),
-                directory =     '/Users/charlie/Documents/code/interface_server/server/interfaces/', ///$(row.children()[1].children[0]).val(),
+                directory =     $(row.children()[1].children[0]).val(),
                 webServerPort = $(row.children()[2].children[0]).val(),
                 socketPort =    $(row.children()[3].children[0]).val(),
                 oscOutPort =    $(row.children()[4].children[0]).val(),

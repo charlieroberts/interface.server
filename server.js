@@ -165,7 +165,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           oscIn     : parameters[5] || 8083,
         },
         shouldAppendID : false,
-        shouldMonitor :false
+        shouldMonitor : false
       });
       
       global.interface.makeServer(
