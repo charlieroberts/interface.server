@@ -76,7 +76,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         for(var i = 0; i < serverRows.length; i++) {
           var row = $(serverRows[i]);
           // var server = global.interface.servers[i];
-          var dir = 
+          //var dir = 
           var _server = {
             'name'          : $(row.children()[0].children[0]).val(),
             'directory'     : $(row.children()[1].children[0]).val(),
@@ -187,7 +187,9 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
     if(args.path in __admin)
       __admin[ args.path ]( args.params );
   });
+  
 }
+
 
 global.interface.count++;
 
@@ -207,7 +209,7 @@ $(window).on('load', function() {
 });
 
 var ids = [];
-global.interface.makeServer = function(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, shouldAppendID, shouldMonitor, livecode) {
+global.interface.makeServer = function(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, oscOutIP, shouldAppendID, shouldMonitor, livecode) {
   var clients           = [],
       serverID          = global.interface.servers.length,
       root              = directory,
@@ -229,6 +231,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
         'name'          : name,
         'clients'       : clients,
         'oscOut'        : null,
+        'oscOutIP'      : oscOutIP,
         'oscIn'         : null,
         'webSocket'     : null,
         'webServer'     : null,
@@ -267,7 +270,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
         },
       };
       
-  server.oscOut = new omgosc.UdpSender( '127.0.0.1', oscOutPort );
+  server.oscOut = new omgosc.UdpSender( oscOutIP, oscOutPort );
   
   if(global.interface.portsInUse.indexOf( oscInPort ) === -1) {
     server.oscIn = new omgosc.UdpReceiver( oscInPort );

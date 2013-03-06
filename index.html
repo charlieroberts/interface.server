@@ -51,7 +51,8 @@ input[type="text"] { width: 90%; }
     <table id='serverTable'>
       <thead>
         <tr>
-        <th width='10%'>name</th><th width='30%'>directory</th><th width='10%'>web server port</th><th width='10%'>socket port</th><th width='10%'>osc output port</th><th width='10%'>osc input port</th><th width='5%'>send id</th><th width='5%'>monitor</th><th width='5%'>enabled</th>
+        <!--<th width='10%'>name</th><th width='30%'>directory</th><th width='10%'>web server port</th><th width='10%'>socket port</th><th width='10%'>osc output port</th><th width='10%'>osc output ip</th><th width='10%'>osc input port</th><th width='5%'>send id</th><th width='5%'>monitor</th><th width='5%'>enabled</th>-->
+        <th>name</th><th >directory</th><th >web server port</th><th >socket port</th><th >osc output port</th><th >osc output ip</th><th >osc input port</th><th >send id</th><th >monitor</th><th >enabled</th>
         </tr>
       </thead>
       <tbody id="serverTableBody">
@@ -95,7 +96,8 @@ input[type="text"] { width: 90%; }
   var serverCount = 1,
       _srv = null,
       servers = {};
-  
+      win = require('nw.gui').Window.get();
+      win.show();
   if(typeof global.interface === 'undefined') {
     var s = $('<script src="server.js" type="text/javascript" charset="utf-8">');
     $('head').append(s);
@@ -130,6 +132,7 @@ input[type="text"] { width: 90%; }
         .append( $("<td>").append( $('<input type="text" value="8080"></input>') ) )        
         .append( $("<td>").append( $('<input type="text" value="8081"></input>') ) )
         .append( $("<td>").append( $('<input type="text" value="8082"></input>') ) )
+        .append( $("<td>").append( $('<input type="text" value="127.0.0.1"></input>') ) )        
         .append( $("<td>").append( $('<input type="text" value="8083"></input>') ) )
         .append( $("<td>").append( $("<input type='checkbox'>") ) )
         .append( $("<td>").append( $("<input type='checkbox'>") ) )
@@ -140,12 +143,13 @@ input[type="text"] { width: 90%; }
                 webServerPort = $(row.children()[2].children[0]).val(),
                 socketPort =    $(row.children()[3].children[0]).val(),
                 oscOutPort =    $(row.children()[4].children[0]).val(),
-                oscInPort =     $(row.children()[5].children[0]).val(),                
-                appendID =      $(row.children()[6].children[0]).is(':checked'),                
-                monitor =       $(row.children()[7].children[0]).is(':checked');
+                oscOutIP =      $(row.children()[5].children[0]).val(),                
+                oscInPort =     $(row.children()[6].children[0]).val(),                
+                appendID =      $(row.children()[7].children[0]).is(':checked'),                
+                monitor =       $(row.children()[8].children[0]).is(':checked');
 
             if(directory !== '' && typeof directory !== 'undefined') {
-              _srv = global.interface.makeServer(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, appendID, monitor);
+              _srv = global.interface.makeServer(name, directory, webServerPort, socketPort, oscInPort, oscOutPort, oscOutIP, appendID, monitor);
               _srv.row = row;
               
               if(_srv) {
@@ -154,12 +158,12 @@ input[type="text"] { width: 90%; }
                 $(row.children()[2].children[0]).change( function() { _srv.webServerPort  = $(this).val(); });
                 $(row.children()[3].children[0]).change( function() { _srv.socketPort     = $(this).val(); });
                 $(row.children()[4].children[0]).change( function() { _srv.oscOutPort     = $(this).val(); });
-                $(row.children()[5].children[0]).change( function() { _srv.oscInPort      = $(this).val(); });
-                $(row.children()[6].children[0]).change( function() { _srv.shouldAppendID = $(this).is(':checked'); });
-                $(row.children()[7].children[0]).change( function() { _srv.shouldMonitor  = $(this).is(':checked'); });
+                $(row.children()[6].children[0]).change( function() { _srv.oscInPort      = $(this).val(); });
+                $(row.children()[7].children[0]).change( function() { _srv.shouldAppendID = $(this).is(':checked'); });
+                $(row.children()[8].children[0]).change( function() { _srv.shouldMonitor  = $(this).is(':checked'); });
                 row.server = _srv;
               }else{
-                $(row.children()[8].children[0]).prop('checked', false);
+                $(row.children()[9].children[0]).prop('checked', false);
               }
             }
           }
@@ -220,6 +224,7 @@ input[type="text"] { width: 90%; }
       return row;
     },
   };
+  
     
 </script>
 </body>
