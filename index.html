@@ -22,19 +22,31 @@ h3 { font-size:1em; display:inline; color:#333; margin-right:3em; margin-left:1e
 h1 { font-size:1.2em;}
 td { font-size:.6em; }
 
+.infoTable td { border:none !important; }
+.infoTable td { font-size:.8em !important; }
+.infoTable tr td:first-child { text-align: right; white-space: nowrap !important; width:25%; font-color:#666; font-weight:bold;}
+.infoTable tr td:last-child { width:75%; padding-left: 2em; text-align:left !important;  }
+
 table { border-collapse:collapse; width: 100%; table-layout:fixed; }
-table, th { border: 1px solid #666;}
+#monitorTable, #serverTable, #clientsTable, th { border: 1px solid #666;}
 
 table thead th { font-size:.8em; }
-th { margin: 0; padding: 5px; font-weight:normal; font-size: .8em; background:#999; color:#fff;}
+
+th { white-space: nowrap !important; margin: 0; padding: 5px; font-weight:normal; font-size: .8em; background:#999; color:#fff;}
 .ui-widget{font-size:.7em;}
 thead tr { width: 100%; }
-tbody tr { height: 2em;}
-tbody tr td { text-align: center; border-right:1px solid #666; border-top:1px solid #666; font-size:.9em; overflow:hidden; }
+tbody { height: 2em;}
+#clientsTableBody tr td, #monitorTableBody tr td { text-align: center; border-right:1px solid #666; border-top:1px solid #666; font-size:.9em; overflow:hidden; }
+
+#serverTableBody td { border-right:1px solid #666; border-top:1px solid #666; }
+
+#serverTableBody td:last-child, #serverTableBody td:nth-child(2) { text-align: center; vertical-align: top; }
 
 #monitorTable, #serverTable, #clientsTable { border:1px solid #666; margin-bottom:1.5em; }
 #clientsTable tbody, #serverTable tbody { font-size:.85em; }
 #monitorTable tbody { font-size:.75em;}
+
+#newServerTable { text-align:left ; }
 
 input[type="text"] { width: 90%; }
 
@@ -51,8 +63,7 @@ input[type="text"] { width: 90%; }
     <table id='serverTable'>
       <thead>
         <tr>
-        <th width='10%'>name</th><th width='16%'>directory</th><th width='10%'>web server port</th><th width='10%'>socket port</th><th width='10%'>output type</th><th width='8%'>output port</th><th width='8%'>output ip</th><th width='8%'>input port</th><th width='5%'>send id</th><th width='5%'>monitor</th><th width='5%'>enabled</th>
-        <!--<th>name</th><th >directory</th><th >web server port</th><th >socket port</th><th >osc output port</th><th >osc output ip</th><th >osc input port</th><th >send id</th><th >monitor</th><th >enabled</th>-->
+        <th width='80%'>server info</th><th width='10%'>append client id</th><th width='10%'>monitor</th>
         </tr>
       </thead>
       <tbody id="serverTableBody">
@@ -122,71 +133,163 @@ input[type="text"] { width: 90%; }
       $("#monitorTableBody").empty();
       rowCount = 0;
     });   
-
+  
+  (function($){
+      $.fn.extend({
+          center: function () {
+              return this.each(function() {
+                  var top = ($(window).height() - $(this).outerHeight()) / 2;
+                  var left = ($(window).width() - $(this).outerWidth()) / 2;
+                  $(this).css({position:'absolute', margin:0, top: '100px', left: (left > 0 ? left : 0)+'px'});
+              });
+          }
+      }); 
+  })(jQuery);
+  
   $("#newButton").button({icons:{ primary:'ui-icon-document' } })
     .click(function() {
-      // server name | interface directory | interface port | osc in port | osc out port | monitor | 
-      var row = $("<tr>")
-        .append( $("<td>").append( $('<input type="text" value="Server' + serverCount++ + '"></input>') ) )
-        .append( $("<td>").append( $('<input type="file" nwdirectory />') ) )
-        .append( $("<td>").append( $('<input type="text" value="8080"></input>') ) )        
-        .append( $("<td>").append( $('<input type="text" value="8081"></input>') ) )
-        .append( $("<td>").append( $('<select><option>OSC</option><option>WebSocket</option></select>') ) )        
-        .append( $("<td>").append( $('<input type="text" value="8082"></input>') ) )
-        .append( $("<td>").append( $('<input type="text" value="127.0.0.1"></input>') ) )        
-        .append( $("<td>").append( $('<input type="text" value="8083"></input>') ) )
-        .append( $("<td>").append( $("<input type='checkbox'>") ) )
-        .append( $("<td>").append( $("<input type='checkbox'>") ) )
-        .append( $("<td>").append( $("<input type='checkbox'>").change( 
-          function() { 
-            var name = $(row.children()[0].children[0]).val(),
-                directory =     $(row.children()[1].children[0]).val(),
-                webServerPort = $(row.children()[2].children[0]).val(),
-                socketPort =    $(row.children()[3].children[0]).val(),
-                outputType =    $(row.children()[4].children[0]).val(),                
-                outPort =       $(row.children()[5].children[0]).val(),
-                outIP =         $(row.children()[6].children[0]).val(),                
-                oscInPort =     $(row.children()[7].children[0]).val(),                
-                appendID =      $(row.children()[8].children[0]).is(':checked'),                
-                monitor =       $(row.children()[9].children[0]).is(':checked');
-                
-            if(directory !== '' && typeof directory !== 'undefined') {
-              //global.interface.makeServer = function(name, directory, webServerPort, socketPort, outputType, inPort, outPort, outIP, shouldAppendID, shouldMonitor, livecode) {
-
-              _srv = global.interface.makeServer(name, directory, webServerPort, socketPort, outputType, oscInPort, outPort, outIP, appendID, monitor);
-              _srv.row = row;
-              
-              if(_srv) {
-                $(row.children()[0].children[0]).change( function() { _srv.name           = $(this).val(); });
-                $(row.children()[1].children[0]).change( function() { _srv.directory      = $(this).val(); });
-                $(row.children()[2].children[0]).change( function() { _srv.webServerPort  = $(this).val(); });
-                $(row.children()[3].children[0]).change( function() { _srv.socketPort     = $(this).val(); });
-                $(row.children()[4].children[0]).change( function() { _srv.socketPort     = $(this).val(); });                
-                $(row.children()[5].children[0]).change( function() { _srv.outPort        = $(this).val(); });
-                $(row.children()[6].children[0]).change( function() { _srv.outIP          = $(this).val(); });                
-                $(row.children()[7].children[0]).change( function() { _srv.oscInPort      = $(this).val(); });
-                $(row.children()[8].children[0]).change( function() { _srv.shouldAppendID = $(this).is(':checked'); });
-                $(row.children()[9].children[0]).change( function() { _srv.shouldMonitor  = $(this).is(':checked'); });
-                row.server = _srv;
-              }else{
-                $(row.children()[9].children[0]).prop('checked', false);
-              }
-            }
-          }
-        ))
-        
-      )
-      .on('mousedown', function() {
-        if(global.interface.highlightServerRow !== null) {
-          $(global.interface.highlightServerRow).removeClass('highlightedRow');
+      var t = $("<table id='newServerTable'>").css({ border:'1px solid #ccc'}),
+          nameRow = $("<tr>"),
+          name = $('<input type="text" value="Server' + serverCount++ + '" />'),
+          nameLabel = $("<td width=150>Server Name</td>").css({ textAlign:'right', paddingRight:'15px' }),
+          directoryRow = $("<tr>"),
+          directory = $('<input type="file" nwdirectory />').css({ textAlign:'left' }),
+          directoryLabel = $("<td>Server Directory</td>").css({ textAlign:'right', paddingRight:'15px' }),
+          webServerRow = $("<tr>"),
+          webServerPort = $('<input type="text" value="8080" />'),
+          webServerLabel = $("<td>Web Server Port</td>").css({ textAlign:'right', paddingRight:'15px' }),
+          webSocketRow = $("<tr>"),
+          webSocketPort = $('<input type="text" value="8081" />'),
+          webSocketLabel = $("<td>Web Socket Port</td>").css({ textAlign:'right', paddingRight:'15px' }),
+          outputTypeRow = $("<tr>"),
+          outputType = $('<select><option>Select an option</option><option>OSC</option><option>WebSocket</option><option>MIDI</option></select>'),
+          outputTypeLabel = $("<td>Output Message Format</td>").css({ textAlign:'right', paddingRight:'15px' });
+      
+      directory.change( function() {
+        if( outputType.val() != 'Select an option') {
+          $( "#submitButton" ).attr( 'disabled', false );
         }
-        $(this).addClass('highlightedRow');
-        global.interface.highlightServerRow = row;
+      })
+      
+      outputType.change( function() {
+        if($(this).val() === 'OSC') {
+          oscOutputPortRow = $("<tr>"),
+          oscOutputPort =  $('<input type="text" value="8082" />'),
+          oscOutputPortLabel = $("<td>OSC Output Port</td>").css({ textAlign:'right', paddingRight:'15px' });
+          oscOutputPortRow.append( oscOutputPortLabel, $("<td>").append( oscOutputPort ).css({ textAlign:'left' }) );
+          
+          t.append( oscOutputPortRow );
+          
+          oscOutputIPRow = $("<tr>"),
+          oscOutputIP =  $('<input type="text" value="127.0.0.1" />'),
+          oscOutputIPLabel = $("<td>OSC Output IP Address</td>").css({ textAlign:'right', paddingRight:'15px' });
+          oscOutputIPRow.append( oscOutputIPLabel, $("<td>").append( oscOutputIP ).css({ textAlign:'left' }) );
+          
+          t.append( oscOutputIPRow );
+          
+          oscInputPortRow = $("<tr>"),
+          oscInputPort =  $('<input type="text" value="8083" />'),
+          oscInputPortLabel = $("<td>OSC Input Port</td>").css({ textAlign:'right', paddingRight:'15px' });
+          oscInputPortRow.append( oscInputPortLabel, $("<td>").append( oscInputPort ).css({ textAlign:'left' }) );
+          
+          t.append( oscInputPortRow );
+        }
+
+        if(directory.val() != '')
+          $( "#submitButton" ).attr( 'disabled', false );
       });
       
-      $("#serverTableBody").append(row);
-  });
-  
+      nameRow.append(nameLabel, $("<td>").append( name ).css({ textAlign:'left' }) );
+      directoryRow.append(directoryLabel, $("<td>").append( directory ).css({ textAlign:'left' }) );
+      webServerRow.append( webServerLabel, $("<td>").append( webServerPort ).css({ textAlign:'left' }) );
+      webSocketRow.append( webSocketLabel, $("<td>").append( webSocketPort ).css({ textAlign:'left' }) );
+      outputTypeRow.append( outputTypeLabel, $("<td>").append( outputType ).css({ textAlign:'left' }) );
+      
+      t.append(nameRow, directoryRow, webServerRow, webSocketRow, outputTypeRow);
+      t.css({ textAlign:'right' })
+      
+      var bigdiv = $("<div>").css({
+        backgroundColor:'rgba(255,255,255,.8)',
+        width:'100%',
+        height:'100%',
+        position:'absolute',
+        top:0,
+        left:0,
+        display:'block'
+      })
+      
+      var d = $("<div>");
+      
+      d.css({
+        backgroundColor:'#efefef',
+        border:'1px solid #ccc',
+        'box-shadow': '5px 5px 5px #888888',
+        display:'block',
+        width:'450px',
+        padding:'1em',
+      })
+      
+      d.append( $("<h2>Create a Server</h2>").css({ marginTop: 0 }) )
+      d.append( $("<p>You must select an output message format and a server directory to create a server.</p>").css({ fontSize: '.9em' }) )
+      d.append( t )
+      
+      d.append( $("<button id='submitButton'>Submit</button>").css({ float:'right' }).attr('disabled', true) );
+      
+      d.append( $("<button>Cancel</button>").css({ float:'right' }).click( function() { bigdiv.remove(); } ) );
+      
+      bigdiv.append( d );
+      $(d).center();
+      
+      $("body").append( bigdiv );
+      
+      $("#submitButton").click( function() {
+        var infoTable = $( '<table>' )
+          .css({ border:'none' })
+          .addClass('infoTable')
+          .append( $("<tr>").append( $("<td>").text('Name'), $("<td>").text(name.val() ) ) ) 
+          .append( $("<tr>").append( $("<td>").text('Directory'), $("<td>").text( directory.val() ) ) ) 
+          .append( $("<tr>").append( $("<td>").text('Web Server Port'), $("<td>").text(webServerPort.val()) ) )
+          .append( $("<tr>").append( $("<td>").text('Web Socket Port'), $("<td>").text( webSocketPort.val()) ) ) 
+          .append( $("<tr>").append( $("<td>").text('Output Message Format'), $("<td>").text( outputType.val()) ) ); 
+
+
+        if( outputType.val() === 'OSC' ) {
+          _srv = global.interface.makeServer(
+            name.val(),
+            directory.val(),
+            webServerPort.val(),
+            webSocketPort.val(),
+            outputType.val(),
+            oscInputPort.val(),
+            oscOutputPort.val(),
+            oscOutputIP.val(), false, false
+          );
+          
+          infoTable.append( $("<tr>").append( $("<td>").text('OSC Input Port'), $("<td>").text( oscInputPort.val() ) ) );
+          infoTable.append( $("<tr>").append( $("<td>").text('OSC Output Port'), $("<td>").text( oscOutputPort.val() ) ) );
+          infoTable.append( $("<tr>").append( $("<td>").text('OSC Output IP Address'), $("<td>").text( oscOutputIP.val() ) ) );                    
+        }
+        
+        var row = $("<tr>")
+          .append( $("<td>").append( infoTable ) )
+          .append( $("<td>").append( $("<input type='checkbox'>").change( function() { _srv.shouldAppendID = $(this).is(':checked'); }) ) )
+          .append( $("<td>").append( $("<input type='checkbox'>").change( function() { _srv.shouldMonitor  = $(this).is(':checked'); }) ) )
+          .on('mousedown', function() {
+            if(global.interface.highlightServerRow !== null) {
+              $(global.interface.highlightServerRow).removeClass('highlightedRow');
+            }
+            $(this).addClass('highlightedRow');
+            global.interface.highlightServerRow = row;
+          });
+          
+        row.server = _srv;
+        
+        $("#serverTableBody").append(row);
+        
+        bigdiv.remove();
+      })
+    });
+
   var rowCount = 0;
   _monitor = {
     postMessage: function(serverName, id, address, typetags, parameters ) {
@@ -229,9 +332,7 @@ input[type="text"] { width: 90%; }
       
       return row;
     },
-  };
-  
-    
+  };  
 </script>
 </body>
 </html>

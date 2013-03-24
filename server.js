@@ -190,7 +190,6 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
   
 }
 
-
 global.interface.count++;
 
 win = gui.Window.get();
