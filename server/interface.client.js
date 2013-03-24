@@ -3,7 +3,7 @@ var expr = /[-a-zA-Z0-9.]+(:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]
     socketString = 'ws://' + socketIPAndPort[0] + ':' + ( parseInt( __socketPort ) );
 
 Interface.Socket = new WebSocket( socketString );
-
+console.log(socketString)
 Interface.Socket.onmessage = function (event) {
   Interface.OSC._receive( event.data );
 };
@@ -46,7 +46,7 @@ Interface.OSC = {
   
   callbacks : {
     "/interface/runScript": function(args) {
-      eval(args.parameters[0]);
+      eval(args[0]);
     },
     "/interface/addWidget": function(args) {
       var w = {};
