@@ -50,21 +50,8 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       $( $( $(row.children()[7] ).find("input") )[0] ).prop( 'checked', server.shouldMonitor );
     },
     
-    serverRow : function(server) {
-      /*
-          $( $( $(row.children()[0] ).find("input") )[0] ).val( server.name );
-          
-          $( $( $(row.children()[1] ).find("input") )[0] ).remove();
-          $(row.children()[1]).text( server.directory );
-
-          $( $( $(row.children()[2] ).find("input") )[0] ).val( server.webServerPort);
-          $( $( $(row.children()[3] ).find("input") )[0] ).val( server.webSocketPort);
-          $( $( $(row.children()[4] ).find("input") )[0] ).val( server.oscOutputPort);
-          $( $( $(row.children()[5] ).find("input") )[0] ).val( server.oscInputPort);
-          $( $( $(row.children()[6] ).find("input") )[0] ).prop( 'checked', server.shouldAppendID );
-          $( $( $(row.children()[7] ).find("input") )[0] ).prop( 'checked', server.shouldMonitor );
-      */
-      
+    serverRow : function( server ) {
+      console.log( server );
       var infoTable = $( '<table>' )
         .css({ border:'none' })
         .addClass('infoTable')
@@ -74,19 +61,10 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         .append( $("<tr>").append( $("<td>").text('Web Socket Port'), $("<td>").text( server.webSocketPort ) ) ) 
         .append( $("<tr>").append( $("<td>").text('Output Message Format'), $("<td>").text( server.outputType ) ) ); 
 
-        
+      var srv;
+      
       if( server.outputType === 'OSC' ) {
-        _srv = global.interface.makeServer(
-          server.name,
-          server.directory,
-          server.webServerPort,
-          server.webSocketPort,
-          server.outputType,
-          server.oscInputPort,
-          server.oscOutputPort,
-          server.oscOutputIP, 
-          false, false
-        );
+        _srv = global.interface.makeServer( server );  
         
         infoTable.append( $("<tr>").append( $("<td>").text('OSC Input Port'), $("<td>").text( server.oscInputPort ) ) );
         infoTable.append( $("<tr>").append( $("<td>").text('OSC Output Port'), $("<td>").text( server.oscOutputPort ) ) );
@@ -121,7 +99,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           //$("#newButton").trigger('click');
           
           var server = servers[i];
-          this.serverRow( server );
+          global.interface.serverRow( server );
 
           // var row = $( $("#serverTableBody tr")[i] );
           // 
@@ -140,6 +118,10 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       })
     },
     
+    propsToSave : ['webServerPort', 'outputType', 'webSocketPort', 
+                   'oscInputPort', 'oscOutputPort', 'oscOutputIP', 
+                   'shouldMonitor', 'shouldAppendID', 'directory', 'name'],
+    
     saveFile : function() { 
       $("#saveFileButton").trigger('click');
       $("#saveFileButton").change(function() {
@@ -147,23 +129,14 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         
         var serverRows = $("#serverTableBody tr");
         ////console.log(serverRows);
-        for(var i = 0; i < serverRows.length; i++) {
-          var row = $(serverRows[i]);
-          // var server = global.interface.servers[i];
-          //var dir = 
-          var server = row.server;
-          // var _server = {
-          //   'name'          : server.name,
-          //   'directory'     : $(row.children()[1].children[0]).val(),
-          //   'ports' : {
-          //     'webServerPort'   : $(row.children()[2].children[0]).val(),
-          //     'webSocketPort'   : $(row.children()[3].children[0]).val(),                
-          //     'oscInputPort'       : $(row.children()[4].children[0]).val(),             
-          //     'oscOutputPort'      : $(row.children()[5].children[0]).val(),      
-          //   },
-          //   'shouldAppendID': $(row.children()[6].children[0]).is(':checked'), 
-          //   'shouldMonitor' : $(row.children()[7].children[0]).is(':checked'),
-          // } 
+        for(var i = 0; i < global.interface.servers.length; i++) {
+          var _server = global.interface.servers[i],
+              server = {};
+          
+          for(var j = 0; j < global.interface.propsToSave.length; j++) {
+            var prop = global.interface.propsToSave[j];
+            if( prop in _server ) server[ prop ] = _server[ prop ];
+          }
           json.push(server);
         }
         fs.writeFileSync($(this).val(), JSON.stringify( json ), ['utf-8']);
