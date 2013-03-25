@@ -254,16 +254,16 @@ input[type="text"] { width: 90%; }
 
 
         if( outputType.val() === 'OSC' ) {
-          _srv = global.interface.makeServer(
-            name.val(),
-            directory.val(),
-            webServerPort.val(),
-            webSocketPort.val(),
-            outputType.val(),
-            oscInputPort.val(),
-            oscOutputPort.val(),
-            oscOutputIP.val(), false, false
-          );
+          _srv = global.interface.makeServer({
+            'name' : name.val(),
+            'directory' : directory.val(),
+            'webServerPort' : webServerPort.val(),
+            'webSocketPort' : webSocketPort.val(),
+            'outputType' : outputType.val(),
+            'oscInputPort' : oscInputPort.val(),
+            'oscOutputPort' : oscOutputPort.val(),
+            'oscOutputIP' : oscOutputIP.val(),
+          });
           
           infoTable.append( $("<tr>").append( $("<td>").text('OSC Input Port'), $("<td>").text( oscInputPort.val() ) ) );
           infoTable.append( $("<tr>").append( $("<td>").text('OSC Output Port'), $("<td>").text( oscOutputPort.val() ) ) );

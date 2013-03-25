@@ -19,7 +19,20 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
     highlightedServerRow : null,
     adminIn : new omgosc.UdpReceiver( ADMIN_PORT ),
     
-    serverRow : function(server) {
+    extend : function(destination, source) {
+      for (var property in source) {
+    		var keys = property.split(".");
+      
+    		if(source[property] instanceof Array && source[property].length < 100) { // don't copy large array buffers
+    	    destination[property] = source[property].slice(0);
+        } else {
+          destination[property] = source[property];
+        }
+      }
+      return destination;
+    },
+    
+    _serverRow : function(server) {
       $("#newButton").trigger('click');
           
       var row = $( $("#serverTableBody tr").last() );
@@ -29,12 +42,72 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       $( $( $(row.children()[1] ).find("input") )[0] ).remove();
       $(row.children()[1]).text( server.directory );
 
-      $( $( $(row.children()[2] ).find("input") )[0] ).val( server.ports.webServer);
-      $( $( $(row.children()[3] ).find("input") )[0] ).val( server.ports.webSocket);
-      $( $( $(row.children()[4] ).find("input") )[0] ).val( server.ports.oscOut);
-      $( $( $(row.children()[5] ).find("input") )[0] ).val( server.ports.oscIn);
+      $( $( $(row.children()[2] ).find("input") )[0] ).val( server.webServerPort);
+      $( $( $(row.children()[3] ).find("input") )[0] ).val( server.webSocketPort);
+      $( $( $(row.children()[4] ).find("input") )[0] ).val( server.oscOutputPort);
+      $( $( $(row.children()[5] ).find("input") )[0] ).val( server.oscInputPort);
       $( $( $(row.children()[6] ).find("input") )[0] ).prop( 'checked', server.shouldAppendID );
       $( $( $(row.children()[7] ).find("input") )[0] ).prop( 'checked', server.shouldMonitor );
+    },
+    
+    serverRow : function(server) {
+      /*
+          $( $( $(row.children()[0] ).find("input") )[0] ).val( server.name );
+          
+          $( $( $(row.children()[1] ).find("input") )[0] ).remove();
+          $(row.children()[1]).text( server.directory );
+
+          $( $( $(row.children()[2] ).find("input") )[0] ).val( server.webServerPort);
+          $( $( $(row.children()[3] ).find("input") )[0] ).val( server.webSocketPort);
+          $( $( $(row.children()[4] ).find("input") )[0] ).val( server.oscOutputPort);
+          $( $( $(row.children()[5] ).find("input") )[0] ).val( server.oscInputPort);
+          $( $( $(row.children()[6] ).find("input") )[0] ).prop( 'checked', server.shouldAppendID );
+          $( $( $(row.children()[7] ).find("input") )[0] ).prop( 'checked', server.shouldMonitor );
+      */
+      
+      var infoTable = $( '<table>' )
+        .css({ border:'none' })
+        .addClass('infoTable')
+        .append( $("<tr>").append( $("<td>").text('Name'), $("<td>").text( server.name ) ) ) 
+        .append( $("<tr>").append( $("<td>").text('Directory'), $("<td>").text( server.directory ) ) ) 
+        .append( $("<tr>").append( $("<td>").text('Web Server Port'), $("<td>").text( server.webServerPort ) ) )
+        .append( $("<tr>").append( $("<td>").text('Web Socket Port'), $("<td>").text( server.webSocketPort ) ) ) 
+        .append( $("<tr>").append( $("<td>").text('Output Message Format'), $("<td>").text( server.outputType ) ) ); 
+
+        
+      if( server.outputType === 'OSC' ) {
+        _srv = global.interface.makeServer(
+          server.name,
+          server.directory,
+          server.webServerPort,
+          server.webSocketPort,
+          server.outputType,
+          server.oscInputPort,
+          server.oscOutputPort,
+          server.oscOutputIP, 
+          false, false
+        );
+        
+        infoTable.append( $("<tr>").append( $("<td>").text('OSC Input Port'), $("<td>").text( server.oscInputPort ) ) );
+        infoTable.append( $("<tr>").append( $("<td>").text('OSC Output Port'), $("<td>").text( server.oscOutputPort ) ) );
+        infoTable.append( $("<tr>").append( $("<td>").text('OSC Output IP Address'), $("<td>").text( server.oscOutputIP ) ) );                    
+      }
+      
+      var row = $("<tr>")
+        .append( $("<td>").append( infoTable ) )
+        .append( $("<td>").append( $("<input type='checkbox'>").change( function() { _srv.shouldAppendID = $(this).is(':checked'); }) ) )
+        .append( $("<td>").append( $("<input type='checkbox'>").change( function() { _srv.shouldMonitor  = $(this).is(':checked'); }) ) )
+        .on('mousedown', function() {
+          if(global.interface.highlightServerRow !== null) {
+            $(global.interface.highlightServerRow).removeClass('highlightedRow');
+          }
+          $(this).addClass('highlightedRow');
+          global.interface.highlightServerRow = row;
+        });
+        
+      row.server = _srv;
+      
+      $("#serverTableBody").append(row);
     },
     
     openFile : function() { 
@@ -45,23 +118,24 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
             servers = JSON.parse( json );
 
         for(var i = 0; i < servers.length; i++) {
-          $("#newButton").trigger('click');
+          //$("#newButton").trigger('click');
           
           var server = servers[i];
+          this.serverRow( server );
 
-          var row = $( $("#serverTableBody tr")[i] );
-
-          $( $( $(row.children()[0] ).find("input") )[0] ).val( server.name );
-          
-          $( $( $(row.children()[1] ).find("input") )[0] ).remove();
-          $(row.children()[1]).text( server.directory );
-
-          $( $( $(row.children()[2] ).find("input") )[0] ).val( server.ports.webServer);
-          $( $( $(row.children()[3] ).find("input") )[0] ).val( server.ports.webSocket);
-          $( $( $(row.children()[4] ).find("input") )[0] ).val( server.ports.oscOut);
-          $( $( $(row.children()[5] ).find("input") )[0] ).val( server.ports.oscIn);
-          $( $( $(row.children()[6] ).find("input") )[0] ).prop( 'checked', server.shouldAppendID );
-          $( $( $(row.children()[7] ).find("input") )[0] ).prop( 'checked', server.shouldMonitor );
+          // var row = $( $("#serverTableBody tr")[i] );
+          // 
+          // $( $( $(row.children()[0] ).find("input") )[0] ).val( server.name );
+          // 
+          // $( $( $(row.children()[1] ).find("input") )[0] ).remove();
+          // $(row.children()[1]).text( server.directory );
+          // 
+          // $( $( $(row.children()[2] ).find("input") )[0] ).val( server.webServerPort);
+          // $( $( $(row.children()[3] ).find("input") )[0] ).val( server.webSocketPort);
+          // $( $( $(row.children()[4] ).find("input") )[0] ).val( server.oscOutputPort);
+          // $( $( $(row.children()[5] ).find("input") )[0] ).val( server.oscInputPort);
+          // $( $( $(row.children()[6] ).find("input") )[0] ).prop( 'checked', server.shouldAppendID );
+          // $( $( $(row.children()[7] ).find("input") )[0] ).prop( 'checked', server.shouldMonitor );
         }
       })
     },
@@ -77,19 +151,20 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           var row = $(serverRows[i]);
           // var server = global.interface.servers[i];
           //var dir = 
-          var _server = {
-            'name'          : $(row.children()[0].children[0]).val(),
-            'directory'     : $(row.children()[1].children[0]).val(),
-            'ports' : {
-              'webServer'   : $(row.children()[2].children[0]).val(),
-              'webSocket'   : $(row.children()[3].children[0]).val(),                
-              'oscIn'       : $(row.children()[4].children[0]).val(),             
-              'oscOut'      : $(row.children()[5].children[0]).val(),      
-            },
-            'shouldAppendID': $(row.children()[6].children[0]).is(':checked'), 
-            'shouldMonitor' : $(row.children()[7].children[0]).is(':checked'),
-          } 
-          json.push(_server);
+          var server = row.server;
+          // var _server = {
+          //   'name'          : server.name,
+          //   'directory'     : $(row.children()[1].children[0]).val(),
+          //   'ports' : {
+          //     'webServerPort'   : $(row.children()[2].children[0]).val(),
+          //     'webSocketPort'   : $(row.children()[3].children[0]).val(),                
+          //     'oscInputPort'       : $(row.children()[4].children[0]).val(),             
+          //     'oscOutputPort'      : $(row.children()[5].children[0]).val(),      
+          //   },
+          //   'shouldAppendID': $(row.children()[6].children[0]).is(':checked'), 
+          //   'shouldMonitor' : $(row.children()[7].children[0]).is(':checked'),
+          // } 
+          json.push(server);
         }
         fs.writeFileSync($(this).val(), JSON.stringify( json ), ['utf-8']);
       })
@@ -97,13 +172,13 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
     
     removeServer : function(server) {
       if(server) {
-        if(server.oscIn !== null) { server.oscIn.close(); }
+        if(server.oscInput !== null) { server.oscInput.close(); }
         if(server.webSocket !== null) { server.webSocket.close(); }
         if(server.webServer !== null) { server.webServer.close(); } //console.log("WEB SERVER SHOULD BE CLOSED DAMN IT")); }
       
-        this.portsInUse.splice( this.portsInUse.indexOf( server.ports.webServer ), 1 );
-        this.portsInUse.splice( this.portsInUse.indexOf( server.ports.webSocket ), 1 );
-        this.portsInUse.splice( this.portsInUse.indexOf( server.ports.oscIn ), 1 );
+        this.portsInUse.splice( this.portsInUse.indexOf( server.webServerPort ), 1 );
+        this.portsInUse.splice( this.portsInUse.indexOf( server.webSocketPort ), 1 );
+        this.portsInUse.splice( this.portsInUse.indexOf( server.oscInputPort ), 1 );
       
         for(var i = 0; i < server.clients.length; i++) {
           if( server.clients[i].row ) {
@@ -155,16 +230,14 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
   
   var __admin = {
     '/createServer' : function( parameters ) {
-      // name | dir | serverPort | socketPort | oscOut | oscIn | shouldAppend | shouldMonitor
+      // name | dir | serverPort | socketPort | oscOutputPort | oscInputPort | shouldAppend | shouldMonitor
       global.interface.serverRow({
         name: parameters[0] || 'livecode',
         directory : parameters[1] || './interfaces',
-        ports : {
-          webServer : parameters[2] || 8080,
-          webSocket : parameters[3] || 8081,
-          oscOut    : parameters[4] || 8082,
-          oscIn     : parameters[5] || 8083,
-        },
+        webServerPort : parameters[2] || 8080,
+        webSocketPort : parameters[3] || 8081,
+        oscOutputPort : parameters[4] || 8082,
+        oscInputPort  : parameters[5] || 8083,
         shouldAppendID : false,
         shouldMonitor : false
       });
@@ -208,10 +281,11 @@ $(window).on('load', function() {
 });
 
 var ids = [];
-global.interface.makeServer = function(name, directory, webServerPort, socketPort, outputType, inPort, outPort, outIP, shouldAppendID, shouldMonitor, livecode) {
+
+global.interface.makeServer = function( serverProps ) {
   var clients           = [],
       serverID          = global.interface.servers.length,
-      root              = directory,
+      root              = serverProps.directory,
       midiInit          = false,
       interfaceJS       = null,
       webserver         = null,
@@ -224,26 +298,12 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
         "programchange" : 0xC0,
       },
       server            = {
-        'directory'     : directory,
-        'shouldAppendID': shouldAppendID,
-        'shouldMonitor' : shouldMonitor,
-        'name'          : name,
+        'shouldAppendID': false,
+        'shouldMonitor' : false,
         'clients'       : clients,
-        'oscOut'        : null,
-        'outIP'         : outIP,
-        'oscIn'         : inPort,
-        'outputType'    : outputType,
-        'webSocket'     : null,
-        'webServer'     : null,
         'masterSocket'  : null,
-        'livecode'      : livecode,
-        ports : {
-          'webServer' : webServerPort,
-          'webSocket' : socketPort,
-          'inport'     : inPort,
-          'outPort'    : outPort,
-        },
-        
+        'livecode'      : false,
+            
         serveInterfaceJS : function(req, res, next){
           //var ip = req.connection.remoteAddress;
 
@@ -255,7 +315,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
             fetchingInterface = req.uri.pathname.slice(1);
           }
           
-          var js = "__socketPort = " + server.ports.webSocket + "; \n" + global.interface.interfaceJS;
+          var js = "__socketPort = " + server.webSocketPort + "; \n" + global.interface.interfaceJS;
           
         	if( req.uri.pathname === "/interface.js" ) {
         		res.writeHead( 200, {
@@ -271,7 +331,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
         },
       };
       
-      //console.log(server);
+  global.interface.extend( server, serverProps );
   
   if(server.outputType === 'WebSocket') {
     server.master = null;
@@ -317,19 +377,19 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
               }
             }
           }else{
-            if( shouldAppendID ) {
+            if( server.shouldAppendID ) {
               args.typetags +='i';
               args.parameters.push( socket.id );
             }
           
-            if( shouldMonitor || socket.shouldMonitor ) {
-              _monitor.postMessage(name, socket.id, args.address, args.typetags, args.parameters );
+            if( server.shouldMonitor || socket.shouldMonitor ) {
+              _monitor.postMessage(server.name, socket.id, args.address, args.typetags, args.parameters );
             }
           
             //console.log(server.outputType);
           
             if(server.outputType === 'OSC') {
-              server.oscOut.send( args.address, args.typetags, args.parameters );
+              server.oscOutputPort.send( args.address, args.typetags, args.parameters );
             }else{
               //console.log("SENDING TO MASTER SOCKET");
               //server.master.send( obj );
@@ -344,83 +404,58 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
       //console.log("SOCKET IS MADE");
     })
   }else{
-    server.oscOut = new omgosc.UdpSender( outIP, outPort );
+    server.oscOutput = new omgosc.UdpSender( server.oscOutputIP, server.oscOutputPort );
   }
   
-  if(global.interface.portsInUse.indexOf( inPort ) === -1) {
-    server.oscIn = new omgosc.UdpReceiver( inPort );
-    global.interface.portsInUse.push( inPort ); 
+  if(global.interface.portsInUse.indexOf( server.oscInputPort ) === -1) {
+    server.oscInput = new omgosc.UdpReceiver( server.oscInputPort );
+    global.interface.portsInUse.push( server.oscInputPort ); 
   }else{
-    alert('there is already a service runnning on port ' + inPort + '. please choose another port for osc input.');
+    alert('there is already a service runnning on port ' + server.oscInputPort + '. please choose another port for osc input.');
     return;
   }
   
-  if( global.interface.portsInUse.indexOf( socketPort ) === -1 ) {
-    server.webSocket  = new ws.Server({ port:socketPort });
-    global.interface.portsInUse.push( socketPort ); 
+  if( global.interface.portsInUse.indexOf( server.webSocketPort ) === -1 ) {
+    server.webSocket  = new ws.Server({ port:server.webSocketPort });
+    global.interface.portsInUse.push( server.webSocketPort ); 
   }else{
-    alert( 'there is already a service runnning on port ' + socketPort + '. please choose another socket port.' );
-    if( server.oscIn !== null ) { 
-      server.oscIn.close(); 
-      global.interface.portsInUse.splice( global.interface.portsInUse.indexOf( inPort ), 1 );
+    alert( 'there is already a service runnning on port ' + server.webSocketPort + '. please choose another socket port.' );
+    if( server.oscInput !== null ) { 
+      server.oscInput.close(); 
+      global.interface.portsInUse.splice( global.interface.portsInUse.indexOf( server.oscInputPort ), 1 );
     }
     return;
   }
 
-  if(global.interface.portsInUse.indexOf( webServerPort ) === -1) {
+  if(global.interface.portsInUse.indexOf( server.webServerPort ) === -1) {
     if( server.livecode === true ) {
       server.webServer = connect()
         .use( server.serveInterfaceJS )
         .use( function(req, res) { res.end( global.interface.livecodePage ) })
-       .listen( webServerPort );
+       .listen( server.webServerPort );
     }else{
       server.webServer = connect()
-        .use( connect.directory( directory, { hidden:true,icons:true } ) )
+        .use( connect.directory( server.directory, { hidden:true,icons:true } ) )
         .use( server.serveInterfaceJS )
-        .use( connect.static( directory ) )
-        .listen( webServerPort );
+        .use( connect.static( server.directory ) )
+        .listen( server.webServerPort );
     }
         
-    global.interface.portsInUse.push( webServerPort );
+    global.interface.portsInUse.push( server.webServerPort );
   }else{
-    alert( 'there is already a service runnning on port ' + webServerPort + '. please choose another web server port.' );
+    alert( 'there is already a service runnning on port ' + server.webServerPort + '. please choose another web server port.' );
     
-    if( server.oscIn !== null ) { 
-      server.oscIn.close();
-      global.interface.portsInUse.splice( global.interface.portsInUse.indexOf( inPort ), 1 );
+    if( server.oscInput !== null ) { 
+      server.oscInput.close();
+      global.interface.portsInUse.splice( global.interface.portsInUse.indexOf( server.oscInputPort ), 1 );
     }
     
     if( server.webSocket !== null ) {
       server.webSocket.close();
-      global.interface.portsInUse.splice( global.interface.portsInUse.indexOf( socketPort ), 1 );
+      global.interface.portsInUse.splice( global.interface.portsInUse.indexOf( server.webSocketPort ), 1 );
     }
     return;
   }
-   
-  Object.defineProperties(server, {
-    'shouldMonitor' : {
-      get : function() { return shouldMonitor  },
-      set : function(_v) { shouldMonitor = _v; }
-    },
-    'shouldAppendID' : {
-      get : function() { return shouldAppendID  },
-      set : function(_v) { shouldAppendID = _v; }
-    },
-    'name' : {
-      get : function() { return name  },
-      set : function(_v) { name = _v }
-    },
-    'inPort' : {
-      get : function() { return inPort  },
-      set : function(_v) { 
-        inPort = _v; 
-        oscIn.close();
-        
-        oscIn = new omgosc.UdpReceiver(inPort),
-        server.oscIn = oscIn;
-      }
-    },
-  })
 
   server.webSocket.on( 'connection', function (socket) {
     var found = false;
@@ -488,19 +523,19 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
             }
           }
         }else{
-          if( shouldAppendID ) {
+          if( server.shouldAppendID ) {
             args.typetags +='i';
             args.parameters.push( socket.id );
           }
           
-          if( shouldMonitor || socket.shouldMonitor ) {
-            _monitor.postMessage(name, socket.id, args.address, args.typetags, args.parameters );
+          if( server.shouldMonitor || socket.shouldMonitor ) {
+            _monitor.postMessage(server.name, socket.id, args.address, args.typetags, args.parameters );
           }
           
           //console.log(server.outputType);
           
           if(server.outputType === 'OSC') {
-            server.oscOut.send( args.address, args.typetags, args.parameters );
+            server.oscOutput.send( args.address, args.typetags, args.parameters );
           }else{
             //console.log("SENDING TO MASTER SOCKET");
             server.master.send( obj );
@@ -523,20 +558,20 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
   
     socket.on('close', function() {
       if(server.outputType === 'OSC') 
-        server.oscOut.send( '/deviceDisconnected', 'i', [ socket.id ] );
+        server.oscOutput.send( '/deviceDisconnected', 'i', [ socket.id ] );
       //clients.splice(socket.id, 1);
       delete clients[ socket.id ];
       $(socket.row).remove();
     });
     
     if(server.outputType === 'OSC') {
-      server.oscOut.send( '/deviceConnected', 'i', [ socket.id ] );
+      server.oscOutput.send( '/deviceConnected', 'i', [ socket.id ] );
     }
     
     socket.row = _monitor.addClient(socket, socket.id, socket.ip, server.name, socket.interfaceName); 
   });
   
-  server.oscIn.on('', function(args) {
+  server.oscInput.on('', function(args) {
     var split = args.path.split("/");
     if(split[1] === 'clients') {
       var msg = {},
@@ -568,7 +603,7 @@ global.interface.makeServer = function(name, directory, webServerPort, socketPor
   global.interface.servers.push( server );
   
   if(server.outputType === 'OSC') {
-    server.oscOut.send( '/serverCreated', 's', [ server.name ] );
+    server.oscOutput.send( '/serverCreated', 's', [ server.name ] );
   }
   
   return server;
