@@ -1,5 +1,5 @@
 {
-  "name": "Interface.js server",
+  "name": "InterfaceJSserver",
   "main": "index.html",
   "window": {
     "show":false,
