@@ -1,7 +1,5 @@
 #Using the Interface.js Server
 
-Prebuilt binaries of the server are available for OS X and Windows [here][binaries]
-
 ![Screenshot](https://raw.github.com/charlieroberts/interface.server/screenshots/server_screenshot.png) 
 
 This project is designed as a server for interfaces created with [Interface.js][interfacejs]. The Interface.js Server has a number of purposes
@@ -9,7 +7,7 @@ This project is designed as a server for interfaces created with [Interface.js][
   2) it translates network messages from your browser into OSC or MIDI messages.
   3) it allows you to monitor connections and dataflow
   
-The server will eventually be distributed as a compiled binary application for OS X, Linux and Windows, but for now if you want to use the server, you'll need to download and install [node.js][nodejs]. Node.js will provide most of the functionality we need to serve web pages, but we'll also need to add a few utility libraries to send OSC and MIDI and carry out a few other specialized tasks. We can install these utilities using the Node Package Manager, or NPM, which is installed with Node.js. After installing Node.js, open a terminal and run the following commands:
+Prebuilt binaries of the server are available for OS X and Windows [here][binaries]. If you want to build the server from source or are using Linux, you'll need to download and install [node.js][nodejs]. Node.js will provide most of the functionality we need to serve web pages, but we'll also need to add a few utility libraries to send OSC and MIDI and carry out a few other specialized tasks. We can install these utilities using the Node Package Manager, or NPM, which is installed with Node.js. After installing Node.js, open a terminal and run the following commands:
 
 ```
 npm install midi
