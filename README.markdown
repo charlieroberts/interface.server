@@ -55,4 +55,4 @@ The server directory comes with a couple of simple test files to experiment with
 [npm]:http://nodejs.org/download/
 [node-webkit]:https://github.com/rogerwang/node-webkit
 [interfacejs]:https://github.com/charlieroberts/interface.js
-[binaries]:http://www.charlie-roberts.com/interface/build
+[binaries]:http://www.charlie-roberts.com/interface/builds
