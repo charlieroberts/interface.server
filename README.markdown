@@ -16,7 +16,7 @@ npm install connect
 npm install ws
 ```
 
-The last step is to [node-webkit][download node-webkit]. Linux users plase note that you should download the node-webkit binary rather than attempting to build node-webkit from source. Node-webkit enables desktop applications to be built using web technologies. Once you have Node-webkit installed, place this directory in the same location. You can then open the server as follows:
+The last step is to [download node-webkit][node-webkit]. Linux users plase note that you should download the node-webkit binary rather than attempting to build node-webkit from source. Node-webkit enables desktop applications to be built using web technologies. Once you have Node-webkit installed, place this directory in the same location. You can then open the server as follows:
 
 ```
 ./nw projectDirectoryName
