@@ -22,6 +22,8 @@ The last step is to [download node-webkit][node-webkit]. Linux users plase note 
 ./nw projectDirectoryName
 ```
 
+Note: make sure you've run git submodule init and git submodule update before you do this so that the interface.js repo is pulled.
+
 Upon opening the server, hit the "New Server" button. Configure the server by selecting a port for it to serve web pages on, a port to communicate over web sockets, and a port to receive and send OSC on. You should also select the directory containing your Interface.js interface files. Once this is complete, check the enabled box and the server will begin to run.
 
 Now you can open up a mobile device and type the name of the computer that the server is running on and add a .local to the url to tell the browser the destination is on the local network. Finally, add the port that you configured the server to serve web pages on (default 8080). For example, if your computer's name is foo:
