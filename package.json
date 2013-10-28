@@ -1,8 +1,0 @@
-{
-  "name": "InterfaceJSserver",
-  "main": "index.html",
-  "window": {
-    "show":false,
-    "toolbar":false
-  }
-}
