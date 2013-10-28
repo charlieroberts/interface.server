@@ -3,9 +3,19 @@ var expr = /[-a-zA-Z0-9.]+(:(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]
     socketString = 'ws://' + socketIPAndPort[0] + ':' + ( parseInt( __socketPort ) );
 
 Interface.Socket = new WebSocket( socketString );
-console.log(socketString)
+
+console.log( 'Opening socket ' + socketString )
+
 Interface.Socket.onmessage = function (event) {
-  Interface.OSC._receive( event.data );
+  var data = JSON.parse( event.data )
+  
+  if( data.type === 'osc' ) {
+    Interface.OSC._receive( event.data );
+  }else if( data.type === 'webSocket') {
+    if( Interface.Socket.receive ) {
+      Interface.Socket.receive( data )
+    }
+  }
 };
 
 Interface.OSC = {

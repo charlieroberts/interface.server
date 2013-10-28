@@ -4,29 +4,26 @@
 </head>
 <body>
   <script>
-    // NOTE: The Interface.js server outputs all OSC messages to port 8082. See the README for more information
-    
-    panel = new Interface.Panel({ useRelativeSizesAndPositions: true });
-    
-    // send a message to the address '/button'
-    a = new Interface.Button({
-      bounds:[0,0,1,.5],
-      mode:'contact',
-      target:"OSC", key:'/clients/1/blah',
-    })
-    
-    // send a message to the address '/slider'
-    b = new Interface.Slider({
-      bounds:[0,.5,1,.5],
-      isVertical:false,
-      target:"OSC", key:'/slider',
-    })
-    panel.add( a, b );
-    
-    Interface.OSC.receive = function(address, typetags, parameters) {
-      window.alert(address + typetags + parameters);
-    }
-    
+  panel = new Interface.Panel({ useRelativeSizesAndPositions: true });
+  
+  // send a message to the address '/button'
+  a = new Interface.Button({
+    bounds:[0,0,1,.5],
+    mode:'contact',
+    target:"OSC", key:'/clients/1/blah',
+  })
+  
+  // send a message to the address '/slider'
+  b = new Interface.Slider({
+    bounds:[0,.5,1,.5],
+    isVertical:false,
+    target:"OSC", key:'/slider',
+  })
+  panel.add( a, b );
+  
+  Interface.OSC.receive = function(address, typetags, parameters) {
+    window.alert(address + typetags + parameters);
+  } 
   </script>
 </body>
 </html>
