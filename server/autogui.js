@@ -110,7 +110,7 @@ Interface.autogui = {
     _widget.div.widget = null;
     var parent = _widget.div.parent;
     if (parent != null) {
-      var childNumber = jQuery.inArray(_widget.div, parent.children);
+      var childNumber = parent.children.indexOf( _widget.div );
       // determine if sibling is already empty, if so, remove sibling and self from parent array
       var siblingNumber = (childNumber === 1) ? 0 : 1;
       if (parent.children[siblingNumber].widget == null) {
