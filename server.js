@@ -404,9 +404,150 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         },
       };  
     },
-    handleMsg : function( address, parameters ) {
+    handleMsgToClients : function( server, address, parameters ) {
+      var split = address.split("/");
+      if( split[1] === 'clients') {
+        var msg = { type:'webSocket' },
+            clientNum = split[2],
+            address = "/" + split.slice(3).join('/'),
+            remote = null;
+      
+        msg.address = address;
+        msg.body = parameters;
+      
+        if(clientNum === '*') {
+          for(var i = 0; i < server.clients.length; i++) {
+            server.clients[i].send( obj );
+          }
+        }else{
+          clientNum = parseInt(clientNum)
+  
+          for(var i = 0; i < server.clients.length; i++) {
+            if( server.clients[i].id === clientNum ) {
+              remote = server.clients[i];
+              break;
+            }
+          }
+  
+          if(remote !== null) {
+            remote.send( JSON.stringify( msg ) );
+          }
+        }
+       }else{
+         for(var i = 0; i < server.clients.length; i++) {
+           server.clients[i].send( obj );
+         }
+       }
+    },
+    handleMsgFromClients : function( server, address, args, socket) {
+      if(args.type === 'osc') {
+        var split = args.address.split("/");
+  
+        if( split[1] === 'clients') { // message is addressed to another client
+          global.interface.handleMsgToClients( server, address, parameters)
+        }else{
+          if( server.shouldAppendID ) {
+            args.typetags +='i';
+            args.parameters.push( socket.id );
+          }
+      
+          if( server.shouldMonitor || socket.shouldMonitor ) {
+            _monitor.postMessage(server.name, socket.id, args.address, args.typetags, args.parameters );
+          }
+      
+          if(server.outputType === 'OSC') {
+            server.oscOutput.send( args.address, args.typetags, args.parameters );
+          }else{
+            if( server.master !== null) { // must check to see if master application has connected
+              server.master.send( obj );
+            }
+          }
+        }
+      }else if( args.type === 'midi' ) {
+        if(args.midiType !== 'programchange') {
+          midiOutput.sendMessage([ midiNumbers[ args.midiType ] + args.channel, args.number, Math.round(args.value) ])
+          if( server.shouldMonitor || socket.shouldMonitor ) {
+            _monitor.postMessage(server.name, socket.id, args.midiType, args.channel, args.number + " : " + Math.round(args.value)  );
+          }
+        }else{
+          midiOutput.sendMessage([ 0xC0 + args.channel, args.number ])
+          if( server.shouldMonitor || socket.shouldMonitor ) {
+            _monitor.postMessage(server.name, socket.id, args.midiType, args.channel, args.number  );
+          }
+        }
+      }
+    },
+    assignSocketID : function( server, socket ) {
+      var found = false
 
-    }, 
+      for(var i = 0; i < server.clients.length; i++) {
+        if(typeof server.clients[i] !== 'undefined') {
+          if(server.clients[i].ip === socket.ip) {
+            found = true;
+            socket.id = server.clients[i].id;
+            break;
+          }
+        }
+      }
+      
+      if(!found) {
+        var id;
+        for(var i = 0; i <= server.clients.length; i++) {
+          if(typeof server.clients[i] === 'undefined') {
+            id = i;
+            break;
+          }
+        }
+        socket.id = id;
+        server.clients[ id ] = socket;
+      }
+    },
+    clientClose : function( server, socket ) {
+      if(server.outputType === 'OSC')  {
+        server.oscOutput.send( '/deviceDisconnected', 'i', [ socket.id ] );
+      }else if( server.outputType === 'WebSocket' ) {
+        if( server.master !== null) {
+          var msg = JSON.stringify({ type:'osc', address:'/deviceDisconnected', typetags:'i', parameters:[ socket.id ] })
+          server.master.send( msg ) 
+        }
+      }
+
+      delete clients[ socket.id ];
+      $(socket.row).remove();
+    },
+    sendClientConnectionNotification : function( server, id ) {
+      if(server.outputType === 'OSC') {
+        server.oscOutput.send( '/deviceConnected', 'i', [ id ] );
+      }else if( server.outputType === 'WebSocket' ) {
+        if( server.master !== null ) {
+          var msg = JSON.stringify({ type:'osc', address:'/deviceConnected', typetags:'i', parameters:[ id ] })
+            
+          server.master.send( msg ) 
+        }
+      }
+    },
+    createWebSocketListener : function( server ) {
+      server.webSocket.on( 'connection', function (socket) {
+        var found = false;
+    
+        socket.shouldMonitor = false;
+        socket.ip = socket._socket.remoteAddress;
+        socket.interfaceName = fetchingInterface;
+        
+        global.interface.assignSocketID( server, socket );
+
+        socket.on( 'message', function( obj ) {
+          var args = JSON.parse( obj );
+          global.interface.handleMsgFromClients( server, args.address, args, socket )
+        })
+
+        socket.on('close', function() { global.interface.clientClose( server, socket ); } )
+        
+        global.interface.sendClientConnectionNotification( server, socket.id );
+
+        socket.row = _monitor.addClient(socket, socket.id, socket.ip, server.name, socket.interfaceName); 
+      });
+    },
     makeServer : function( serverProps ) {
       var clients           = [],
           serverID          = global.interface.servers.length,
@@ -455,7 +596,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
               next();
             },
           };
-      
+
       global.interface.extend( server, serverProps );
 
       if(server.outputType === 'WebSocket') {
@@ -470,45 +611,11 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           server.master.ip = server.master._socket.remoteAddress;
                     
           server.master.on( 'message', function( obj ) {
-            var args = JSON.parse( obj ),
-                split = args.address.split("/");
-            console.log ( obj )      
-            if( split[1] === 'clients') {
-              var msg = { type:'webSocket' },
-                  clientNum = split[2],
-                  address = "/" + split.slice(3).join('/'),
-                  remote = null;
-      
-              msg.address = address;
-              msg.body = args;
-      
-              if(clientNum === '*') {
-                for(var i = 0; i < server.clients.length; i++) {
-                  server.clients[i].send( obj );
-                }
-              }else{
-                clientNum = parseInt(clientNum)
-      
-                for(var i = 0; i < server.clients.length; i++) {
-                  if( server.clients[i].id === clientNum ) {
-                    remote = server.clients[i];
-                    break;
-                  }
-                }
-      
-                if(remote !== null) {
-                  remote.send( JSON.stringify( msg ) );
-                }
-              }
-            }else{
-              for(var i = 0; i < server.clients.length; i++) {
-                server.clients[i].send( obj );
-              }
-            }
-            
+            var args = JSON.parse( obj )
+            global.interface.handleMsgToClients( server, args.address, args )
           });
       
-          //console.log("SOCKET IS MADE");
+          console.log("SOCKET IS MADE");
         })
       }else if( server.outputType === 'OSC' ){
         server.oscOutput = new omgosc.UdpSender( server.oscOutputIP, server.oscOutputPort );
@@ -530,9 +637,8 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       }
 
       if( global.interface.portsInUse.indexOf( server.webSocketPort ) === -1 ) {
-        console.log( server.webSocketPort )
         server.webSocket  = new ws.Server({ port:server.webSocketPort });
-        global.interface.portsInUse.push( server.webSocketPort ); 
+        global.interface.portsInUse.push( server.webSocketPort );
       }else{
         alert( 'there is already a service runnning on port ' + server.webSocketPort + '. please choose another socket port.' );
         if( server.oscInput !== null ) { 
@@ -541,13 +647,14 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         }
         return;
       }
+
       if(global.interface.portsInUse.indexOf( server.webServerPort ) === -1) {
         if( server.livecode === true ) {
           server.webServer = connect()
             .use( server.serveInterfaceJS )
             .use( function(req, res) { res.end( global.interface.livecodePage ) })
-           .listen( server.webServerPort );
-         server.name = 'livecode';
+            .listen( server.webServerPort );
+          server.name = 'livecode';
         }else{
           server.webServer = connect()
             .use( connect.directory( server.directory, { hidden:true,icons:true } ) )
@@ -570,128 +677,9 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         }
         return;
       }
-      server.webSocket.on( 'connection', function (socket) {
-        var found = false;
-    
-        socket.shouldMonitor = false;
-        socket.ip = socket._socket.remoteAddress;
-        socket.interfaceName = fetchingInterface;
 
-        for(var i = 0; i < server.clients.length; i++) {
-          if(typeof server.clients[i] !== 'undefined') {
-            if(server.clients[i].ip === socket.ip) {
-              found = true;
-              socket.id = server.clients[i].id;
-              break;
-            }
-          }
-        }
-        
-        if(!found) {
-          var id;
-          for(var i = 0; i <= server.clients.length; i++) {
-            if(typeof server.clients[i] === 'undefined') {
-              id = i;
-              break;
-            }
-          }
-          socket.id = id;
-          server.clients[ id ] = socket;
-        }
-        socket.on( 'message', function( obj ) {
-          var args = JSON.parse( obj );
-          console.log(obj);
-          if(args.type === 'osc') {
-            var split = args.address.split("/");
+      global.interface.createWebSocketListener( server );
       
-            if( split[1] === 'clients') {
-              var msg = {},
-                  clientNum = split[2],
-                  address = "/" + split.slice(3).join('/'),
-                  remote = null;;
-        
-              msg.address = address;
-              msg.typetags = args.typetags;
-              msg.parameters = args.parameters;
-        
-              if(clientNum === '*') {
-                for(var i = 0; i < server.clients.length; i++) {
-                  server.clients[i].send( JSON.stringify(msg) );
-                }
-              }else{
-                clientNum = parseInt(clientNum)
-        
-                for(var i = 0; i < server.clients.length; i++) {
-                  if( server.clients[i].id == clientNum ) {
-                    remote = server.clients[i];
-                    break;
-                  }
-                }
-        
-                if(remote !== null) {
-                  remote.send( JSON.stringify( msg ) );
-                }
-              }
-            }else{
-              if( server.shouldAppendID ) {
-                args.typetags +='i';
-                args.parameters.push( socket.id );
-              }
-          
-              if( server.shouldMonitor || socket.shouldMonitor ) {
-                _monitor.postMessage(server.name, socket.id, args.address, args.typetags, args.parameters );
-              }
-          
-              //console.log(server.outputType);
-          
-              if(server.outputType === 'OSC') {
-                server.oscOutput.send( args.address, args.typetags, args.parameters );
-              }else{
-                if( server.master !== null) { // must check to see if master application has connected
-                  server.master.send( obj );
-                }
-              }
-            }
-          }else if( args.type === 'midi' ) {
-            if(args.midiType !== 'programchange') {
-              midiOutput.sendMessage([ midiNumbers[ args.midiType ] + args.channel, args.number, Math.round(args.value) ])
-              if( server.shouldMonitor || socket.shouldMonitor ) {
-                _monitor.postMessage(server.name, socket.id, args.midiType, args.channel, args.number + " : " + Math.round(args.value)  );
-              }
-            }else{
-              midiOutput.sendMessage([ 0xC0 + args.channel, args.number ])
-              if( server.shouldMonitor || socket.shouldMonitor ) {
-                _monitor.postMessage(server.name, socket.id, args.midiType, args.channel, args.number  );
-              }
-            }
-          }
-        });
-  
-        socket.on('close', function() {
-          if(server.outputType === 'OSC')  {
-            server.oscOutput.send( '/deviceDisconnected', 'i', [ socket.id ] );
-          }else if( server.outputType === 'WebSocket' ) {
-            if( server.master !== null) {
-              var msg = JSON.stringify({ type:'osc', address:'/deviceDisconnected', typetags:'i', parameters:[ socket.id ] })
-              server.master.send( msg ) 
-            }
-          }
-          //clients.splice(socket.id, 1);
-          delete clients[ socket.id ];
-          $(socket.row).remove();
-        });
-    
-        if(server.outputType === 'OSC') {
-          server.oscOutput.send( '/deviceConnected', 'i', [ socket.id ] );
-        }else if( server.outputType === 'WebSocket' ) {
-          if( server.master !== null ) {
-            var msg = JSON.stringify({ type:'osc', address:'/deviceConnected', typetags:'i', parameters:[ socket.id ] })
-            
-            server.master.send( msg ) 
-          }
-        }
-        socket.row = _monitor.addClient(socket, socket.id, socket.ip, server.name, socket.interfaceName); 
-      });
       if(server.outputType === 'OSC') {
         server.oscInput.on('', function(args) {
           console.log( 'MSG RECEVIED ' + args.path + ' : CLIENTS COUNT ' + server.clients.length )
@@ -729,7 +717,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           this.connectMaster( server.master ) 
         }
       }
-      
+
       global.interface.servers.push( server );
       
       return server;
