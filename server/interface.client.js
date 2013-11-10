@@ -176,6 +176,7 @@ Interface.Livecode = {
     eval(args[0]);
   },
   "/interface/addWidget": function(args) {
+    console.log( 'ADD WIDGET ARGS', args )
     var w = typeof args[0] === 'string' ? JSON.parse( args[0] ) : args[0],
         isImportant = false,
   	    hasBounds = (typeof w.bounds !== "undefined") || (typeof w.x !== "undefined"),

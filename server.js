@@ -417,7 +417,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       
         if(clientNum === '*') {
           for(var i = 0; i < server.clients.length; i++) {
-            server.clients[i].send( obj );
+            server.clients[i].send( msg );
           }
         }else{
           clientNum = parseInt(clientNum)
@@ -430,12 +430,13 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           }
   
           if(remote !== null) {
+            if( typeof msg.body !=='undefined' ) {  msg.parameters = msg.body;  }
             remote.send( JSON.stringify( msg ) );
           }
         }
        }else{
          for(var i = 0; i < server.clients.length; i++) {
-           server.clients[i].send( obj );
+           server.clients[i].send( msg );
          }
        }
     },
@@ -454,12 +455,13 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           if( server.shouldMonitor || socket.shouldMonitor ) {
             _monitor.postMessage(server.name, socket.id, args.address, args.typetags, args.parameters );
           }
-      
+
           if(server.outputType === 'OSC') {
             server.oscOutput.send( args.address, args.typetags, args.parameters );
           }else{
             if( server.master !== null) { // must check to see if master application has connected
-              server.master.send( obj );
+              server.master.send( JSON.stringify(args) );
+            }else{
             }
           }
         }
@@ -601,11 +603,10 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
 
       if(server.outputType === 'WebSocket') {
         server.master = null;
-        server.listener = server.webSocketMasterPort === WEBSOCKET_ADMIN_PORT ? global.interface.websocketAdminIn : new ws.Server({ port:server.webSocketMasterPort });
+        server.listener = (server.webSocketMasterPort === WEBSOCKET_ADMIN_PORT) ? global.interface.websocketAdminIn : new ws.Server({ port:server.webSocketMasterPort });
         server.clients = clients
         
         server.listener.on( 'connection', function (connectedSocket) {
-          console.log("A CONNECTION IS MADE");
           server.master = connectedSocket;
     
           server.master.ip = server.master._socket.remoteAddress;
@@ -615,7 +616,6 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
             global.interface.handleMsgToClients( server, args.address, args )
           });
       
-          console.log("SOCKET IS MADE");
         })
       }else if( server.outputType === 'OSC' ){
         server.oscOutput = new omgosc.UdpSender( server.oscOutputIP, server.oscOutputPort );
@@ -629,11 +629,11 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           return;
         }        
       }else{
-        // if( !midiInit ) {
-        //   midiOutput = new midi.output();
-        //   midiOutput.openVirtualPort( "Interface.Server Output" );
-        //   midiInit = true;
-        // }
+        if( !midiInit ) {
+          midiOutput = new midi.output();
+          midiOutput.openVirtualPort( "Interface.Server Output" );
+          midiInit = true;
+        }
       }
 
       if( global.interface.portsInUse.indexOf( server.webSocketPort ) === -1 ) {
@@ -840,6 +840,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           })
 
           options.socket.server = srv
+          srv.master = options.socket
         }else if( options.type === 'OSC' ) {
           srv = global.interface.makeServer({
             webSocketPort:  8081,
@@ -880,9 +881,11 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           address = args.address,
           parameters = args.parameters,
           options = { 'socket': socket, type:'WebSocket' }
-      console.log(" MSG: ", address )
+
       if( address in __admin ) {
         __admin[ address ]( parameters, options )
+      }else{
+        global.interface.handleMsgToClients( global.interface.livecodeServer, address, parameters )
       }
     })
   });
