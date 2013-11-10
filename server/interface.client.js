@@ -9,12 +9,11 @@ Interface.Socket = new WebSocket( socketString );
 Interface.Socket.onmessage = function (event) {
 
   var data = JSON.parse( event.data )
-  //console.log(" ON MESSAGE ", data.address )  
   if( data.type === 'osc' ) {
     Interface.OSC._receive( event.data );
-  }else if( data.type === 'webSocket') {
+  }else {
     if( Interface.Socket.receive ) {
-      Interface.Socket.receive( data )
+      Interface.Socket.receive( data  )
     }
   }
 };
@@ -60,7 +59,7 @@ Interface.OSC = {
       eval(args[0]);
     },
     "/interface/addWidget": function(args) {
-      console.log( args )
+      // console.log( args )
       var w = {};
 
       var json2 = args[0].replace(/\'/gi, "\""); // replace any single quotes in json string
@@ -177,11 +176,12 @@ Interface.Livecode = {
     eval(args[0]);
   },
   "/interface/addWidget": function(args) {
-    var w = args[0],
+    var w = typeof args[0] === 'string' ? JSON.parse( args[0] ) : args[0],
         isImportant = false,
   	    hasBounds = (typeof w.bounds !== "undefined") || (typeof w.x !== "undefined"),
         _w = new Interface[w.type](w);
     
+    // console.log( _w )    
     panel.add( _w );
                   
     if(!hasBounds) {

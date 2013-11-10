@@ -3,13 +3,14 @@
   <script src='interface.js'></script>
 </head>
 <body>
-  <h1>LIVECODE</h1>
+  <p>livecode interface ready.</p>
   <script>
   panel = new Interface.Panel();
   
   Interface.Socket.receive = function( data ) {
     //Interface.Livecode[ data.address ]( data.parameters )
     Interface.Livecode._receive( data )
+    console.log( data )
   }
   </script>
 </body>
