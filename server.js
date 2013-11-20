@@ -421,22 +421,19 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           }
         }else{
           clientNum = parseInt(clientNum)
+          remote = global.interface.getClientById( server, clientNum )
   
-          for(var i = 0; i < server.clients.length; i++) {
-            if( server.clients[i].id === clientNum ) {
-              remote = server.clients[i];
-              break;
-            }
-          }
-  
-          if(remote !== null) {
+          if(remote !== null && remote.readyState === 1 ) {
             if( typeof msg.body !=='undefined' ) {  msg.parameters = msg.body;  }
             remote.send( JSON.stringify( msg ) );
           }
         }
        }else{
-         for(var i = 0; i < server.clients.length; i++) {
-           server.clients[i].send( msg );
+        for( var key in server.clients ) {
+          var client = server.clients[ key ]
+          if( client.readyState === 1 ) {
+             client.send( msg );
+           }
          }
        }
     },
@@ -479,30 +476,45 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         }
       }
     },
+    getClientById : function( server, id ) {
+      for( var key in server.clients ) {
+        var client = server.clients[ key ]
+        if( client.id === id ) { 
+          return client
+        }
+      }
+      console.log(" RETURNING NULL ")
+      return null
+    },
     assignSocketID : function( server, socket ) {
-      var found = false
-
-      for(var i = 0; i < server.clients.length; i++) {
-        if(typeof server.clients[i] !== 'undefined') {
-          if(server.clients[i].ip === socket.ip) {
-            found = true;
-            socket.id = server.clients[i].id;
-            break;
-          }
-        }
+      if( typeof server.clients[ socket.ip ] !== 'undefined' ) {
+        socket.id = server.clients[ socket.ip ].id
+        server.clients[ socket.ip ] = socket
+      }else{
+        server.clients[ socket.ip ] = socket
+        socket.id = server.clientCount++
       }
+      // for(var i = 0; i < server.clients.length; i++) {
+      //   if(typeof server.clients[i] !== 'undefined') {
+      //     if(server.clients[i].ip === socket.ip) {
+      //       found = true;
+      //       socket.id = server.clients[i].id;
+      //       break;
+      //     }
+      //   }
+      // }
       
-      if(!found) {
-        var id;
-        for(var i = 0; i <= server.clients.length; i++) {
-          if(typeof server.clients[i] === 'undefined') {
-            id = i;
-            break;
-          }
-        }
-        socket.id = id;
-        server.clients[ id ] = socket;
-      }
+      // if(!found) {
+      //   var id;
+      //   for(var i = 0; i <= server.clients.length; i++) {
+      //     if(typeof server.clients[i] === 'undefined') {
+      //       id = i;
+      //       break;
+      //     }
+      //   }
+      //   socket.id = id;
+      //   server.clients.push( socket );
+      // }
     },
     clientClose : function( server, socket ) {
       if(server.outputType === 'OSC')  {
@@ -513,8 +525,14 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
           server.master.send( msg ) 
         }
       }
-
-      delete clients[ socket.id ];
+      
+      // for( var i = server.clients.length - 1; i >= 0; i++) {
+      //   if( server.clients[ i ].id === socket.id ) {
+      //     server.clients.splice( i, 1 )
+      //     break;
+      //   }
+      // }
+      // elete server.clients[ socket.id ];
       $(socket.row).remove();
     },
     sendClientConnectionNotification : function( server, id ) {
@@ -551,7 +569,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       });
     },
     makeServer : function( serverProps ) {
-      var clients           = [],
+      var clients           = {},
           serverID          = global.interface.servers.length,
           root              = serverProps.directory,
           midiInit          = false,
@@ -566,12 +584,12 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
             "programchange" : 0xC0,
           },
           server            = {
-            'shouldAppendID': false,
-            'shouldMonitor' : false,
-            'clients'       : clients,
-            'masterSocket'  : null,
-            'livecode'      : false,
-            
+            shouldAppendID: false,
+            shouldMonitor : false,
+            clients       : clients,
+            masterSocket  : null,
+            livecode      : false,
+            clientCount   : 0,
             serveInterfaceJS : function(req, res, next){
               //var ip = req.connection.remoteAddress;
 
@@ -605,10 +623,10 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         server.master = null;
         server.listener = (server.webSocketMasterPort === WEBSOCKET_ADMIN_PORT) ? global.interface.websocketAdminIn : new ws.Server({ port:server.webSocketMasterPort });
         server.clients = clients
-        
+        console.log( 'LISTENING ON', server.listener.port ) 
         server.listener.on( 'connection', function (connectedSocket) {
           server.master = connectedSocket;
-    
+          console.log("MASTER IS CONNECTED") 
           server.master.ip = server.master._socket.remoteAddress;
                     
           server.master.on( 'message', function( obj ) {
@@ -814,17 +832,6 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       //   outputType : 'WebSocket',
       // });
       
-      // global.interface.makeServer(
-      //   parameters[0] || 'livecode',
-      //   parameters[1] || './interfaces',
-      //   parameters[2] || 8080,
-      //   parameters[3] || 8081,
-      //   parameters[4] || 8083,
-      //   parameters[5] || 8082,
-      //   false,
-      //   false,
-      //   true
-      // );
       if( global.interface.livecodeServer === null) {
         var srv
         if( options.type === 'WebSocket' ) {
@@ -862,9 +869,6 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       }
       
       global.interface.appendLivecodeRow()
-      // options.socket.server = global.interface.livecodeServer
-      // global.interface.connectMaster( options.socket )
-      
     }
   }
 
