@@ -8,6 +8,7 @@ Interface.Socket = new WebSocket( socketString );
 
 Interface.Socket.onmessage = function (event) {
   var data = JSON.parse( event.data )
+  console.log( data )
   if( data.type === 'osc' ) {
     Interface.OSC._receive( event.data );
   }else {

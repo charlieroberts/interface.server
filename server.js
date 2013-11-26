@@ -640,7 +640,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         
         if(global.interface.portsInUse.indexOf( server.oscInputPort ) === -1) {
           // don't open a new port if the admin port is the same as the desired input port
-          server.oscInput = server.oscInputPort === OSC_ADMIN_PORT ? new omgosc.UdpReceiver( server.oscInputPort ) : global.interface.oscAdminIn;
+          server.oscInput = server.oscInputPort === OSC_ADMIN_PORT ?  global.interface.oscAdminIn : new omgosc.UdpReceiver( server.oscInputPort )
           global.interface.portsInUse.push( server.oscInputPort ); 
         }else{
           alert('there is already a service runnning on port ' + server.oscInputPort + '. please choose another port for osc input.');
@@ -700,7 +700,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       
       if(server.outputType === 'OSC') {
         server.oscInput.on('', function(args) {
-          console.log( 'MSG RECEVIED ' + args.path + ' : CLIENTS COUNT ' + server.clients.length )
+          // console.log( 'MSG RECEVIED ' + args.path + ' : CLIENTS COUNT ' + server.clients.length )
           var split = args.path.split("/");
           if(split[1] === 'clients') {
             var msg = {},
@@ -711,7 +711,8 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
             msg.address = address;
             msg.typetags = args.typetag;
             msg.parameters = args.params;
-
+            msg.type = 'osc'
+            
             for(var i = 0; i < server.clients.length; i++) {
               if( server.clients[i].id === clientNum ) {
                 remote = server.clients[i];
@@ -725,7 +726,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
             for(var key in server.clients) {
               // console.log( 'CLIENT ' + key ) 
               var client = server.clients[key];
-              client.send( JSON.stringify({ address:args.path, typetags:args.typetag, parameters:args.params }) );
+              client.send( JSON.stringify({ type:'osc', address:args.path, typetags:args.typetag, parameters:args.params }) );
             }
           }
         });
