@@ -405,37 +405,42 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       };  
     },
     handleMsgToClients : function( server, address, parameters ) {
-      var split = address.split("/");
+      var split = address.split("/"),
+          sendToAll = true,
+          msg
+          
       if( split[1] === 'clients') {
-        var msg = { type:'webSocket' },
-            clientNum = split[2],
-            address = "/" + split.slice(3).join('/'),
+        var clientNum = split[2],
             remote = null;
+        
+        address = "/" + split.slice(3).join('/')
+            
+        msg = { type:'webSocket', address:address, body:parameters }
+        if( typeof msg.body !== 'undefined' ) {  msg.parameters = msg.body;  }   
       
-        msg.address = address;
-        msg.body = parameters;
-      
-        if(clientNum === '*') {
-          for(var i = 0; i < server.clients.length; i++) {
-            server.clients[i].send( msg );
-          }
-        }else{
+        if(clientNum !== '*') {
           clientNum = parseInt(clientNum)
           remote = global.interface.getClientById( server, clientNum )
   
           if(remote !== null && remote.readyState === 1 ) {
-            if( typeof msg.body !=='undefined' ) {  msg.parameters = msg.body;  }
             remote.send( JSON.stringify( msg ) );
           }
+          sendToAll = false
         }
-       }else{
+      }
+       
+      if( sendToAll ) {
+        msg = { type:'webSocket', address:address, body:parameters }
+         
+        if( typeof msg.body !== 'undefined' ) {  msg.parameters = msg.body;  }   
+         
         for( var key in server.clients ) {
           var client = server.clients[ key ]
-          if( client.readyState === 1 ) {
-             client.send( msg );
-           }
-         }
-       }
+          if( client && client.readyState === 1 ) {
+            client.send( JSON.stringify( msg ) );
+          }
+        }
+      }
     },
     handleMsgFromClients : function( server, address, args, socket) {
       if(args.type === 'osc') {
@@ -820,6 +825,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
   
   var __admin = {
     '/createLivecodeServer' : function( parameters, options ) {
+      console.log( 'LIVECODE', parameters, options )
       // name | dir | serverPort | socketPort | oscOutputPort | oscInputPort | shouldAppend | shouldMonitor
       // global.interface.serverRow({
       //   name: parameters[0] || 'livecode',
@@ -852,7 +858,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         }else if( options.type === 'OSC' ) {
           srv = global.interface.makeServer({
             webSocketPort:  8081,
-            oscInPort: 8083,
+            oscInPort: parameters[1] || 10000,
             oscOutputPort: parameters[0] || 8082,
             webServerPort: 8080,
             outputType: 'OSC',
@@ -862,7 +868,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
             livecode      : true,
           })
         }
-        console.log( "SERVER IS MADE" )
+        console.log( "SERVER IS MADE", srv.oscOutputPort )
         global.interface.livecodeServer = srv      
       }else{
         console.log( "DIDN't make server")
@@ -876,6 +882,8 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
   global.interface.oscAdminIn.on('', function(args) {
     if(args.path in __admin) {
       __admin[ args.path ]( args.params, { type:'OSC' } );
+    }else{
+      global.interface.handleMsgToClients( global.interface.livecodeServer, args.path, args.params )
     }
   });
   
