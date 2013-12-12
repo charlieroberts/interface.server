@@ -8,7 +8,6 @@ Interface.Socket = new WebSocket( socketString );
 
 Interface.Socket.onmessage = function (event) {
   var data = JSON.parse( event.data )
-  console.log( data )
   if( data.type === 'osc' ) {
     Interface.OSC._receive( event.data );
   }else {
@@ -89,13 +88,19 @@ Interface.OSC = {
             
       var _w = new Interface[w.type](w);
       
-      panel.add( _w );
+      if( w.type !== 'Accelerometer' && w.type !== 'Orientation' ) {
+      
+        panel.add( _w );
                     
-      if(!hasBounds) {
-        // TODO: IMPLEMENT
-        //if(!Interface.isWidgetSensor(w) ) {
-        Interface.autogui.placeWidget(_w, isImportant);
-        //}
+        if( !hasBounds ) {
+          // TODO: IMPLEMENT
+          //if(!Interface.isWidgetSensor(w) ) {
+          Interface.autogui.placeWidget(_w, isImportant);
+          //}
+        }
+      }else{
+        console.log("STARTING UP ACC")
+        _w.start()
       }
         
       // var widgetPage = (typeof w.page !== "undefined") ? w.page : Interface.currentPage;
@@ -192,14 +197,19 @@ Interface.Livecode = {
   	    hasBounds = (typeof w.bounds !== "undefined") || (typeof w.x !== "undefined"),
         _w = new Interface[w.type](w);
     
-    // console.log( _w )    
-    panel.add( _w );
+    console.log( w )
+    if( w.type !== 'Accelerometer' && w.type !== 'Orientation' ) {
+      panel.add( _w );
                   
-    if(!hasBounds) {
-      // TODO: IMPLEMENT
-      //if(!Interface.isWidgetSensor(w) ) {
-      Interface.autogui.placeWidget(_w, isImportant);
-      //}
+      if( !hasBounds ) {
+        // TODO: IMPLEMENT
+        //if(!Interface.isWidgetSensor(w) ) {
+        Interface.autogui.placeWidget(_w, isImportant);
+        //}
+      }
+    }else{
+      console.log("STARTING UP ACC")
+      _w.start()
     }
       
     // var widgetPage = (typeof w.page !== "undefined") ? w.page : Interface.currentPage;
