@@ -43,18 +43,7 @@ Interface.OSC = {
           var child = Interface.panels[i].children[j];
           
           if( child.key === msg.address ) {
-            switch( msg.parameters.length) {
-              case 2 :
-                console.log( 'SETTING VALUE WITH TWO PARAMETERS' )
-                child.setValue( msg.parameters[ 0 ], msg.parameters[ 1 ] );
-                break;
-              case 3 :
-                child.setValue( msg.parameters[ 0 ], msg.parameters[ 1 ], msg.parameters[ 2 ] );
-                break;
-              default:
-                child.setValue( msg.parameters[ 0 ] );
-                break;
-            }
+            child.setValue.apply( child, msg.parameters );
             return;
           }
         }
@@ -178,7 +167,7 @@ Interface.Livecode = {
           var child = Interface.panels[i].children[j];
           
           if( child.key === msg.address ) {
-            child.setValue( msg.parameters[ 0 ] );
+            child.setValue.apply( child, msg.parameters );
             return;
           }
         }
