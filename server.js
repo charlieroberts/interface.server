@@ -408,7 +408,8 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       var split = address.split("/"),
           sendToAll = true,
           msg
-          
+      
+          console.log( "CLIENT MSG" )
       if( split[1] === 'clients') {
         var clientNum = split[2],
             remote = null;
@@ -706,21 +707,22 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
       if(server.outputType === 'OSC') {
         server.oscInput.on('', function(args) {
           // console.log( 'MSG RECEVIED ' + args.path + ' : CLIENTS COUNT ' + server.clients.length )
-          var split = args.path.split("/");
+          var split = args.path.split("/");          
           if(split[1] === 'clients') {
             var msg = {},
                 clientNum = parseInt(split[2]),
                 address = "/" + split.slice(3).join('/'),
                 remote = null;
-    
+                        
             msg.address = address;
             msg.typetags = args.typetag;
             msg.parameters = args.params;
             msg.type = 'osc'
             
-            for(var i = 0; i < server.clients.length; i++) {
-              if( server.clients[i].id === clientNum ) {
-                remote = server.clients[i];
+            for(var key in server.clients) {
+              var client = server.clients[key];
+              if( client.id === clientNum ) {
+                remote = client;
                 break;
               }
             }
