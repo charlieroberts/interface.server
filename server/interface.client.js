@@ -27,7 +27,8 @@ Interface.OSC = {
         typetags: _typetags,
         parameters: Array.isArray(_parameters) ? _parameters : [ _parameters ],
       }
-      this.socket.send( JSON.stringify(obj) );
+      if( this.socket.readyState === 1 )
+        this.socket.send( JSON.stringify(obj) );
     }else{
       console.log("INVALID OSC MESSAGE FORMATION", arguments);
     }
