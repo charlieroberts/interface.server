@@ -404,6 +404,7 @@ if(typeof global.interface === 'undefined') { // only run if not reloading...
         },
       };  
     },
+    
     handleMsgToClients : function( server, address, parameters ) {
       var split = address.split("/"),
           sendToAll = true,
